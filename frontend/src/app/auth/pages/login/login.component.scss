@@ -67,4 +67,35 @@
   button:hover {
     background: #0f47c7;
   }
+
+.mensaje {
+  margin-top: 15px;
+  padding: 12px;
+  text-align: center;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.success {
+  background: #d4f7d4;
+  color: #0b7c14;
+  border: 1px solid #7ad67a;
+}
+
+.error {
+  background: #ffd1d1;
+  color: #b30000;
+  border: 1px solid #ff6b6b;
+}
+
+
+
+
+
+
+
+
+
+
 }

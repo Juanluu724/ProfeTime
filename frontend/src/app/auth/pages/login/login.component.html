@@ -7,20 +7,37 @@
   <div class="login-card">
     <h2>Iniciar Sesión</h2>
 
-    <form>
+    <!-- FORMULARIO CONECTADO -->
+    <form (ngSubmit)="onLogin()">
+
       <input
         type="email"
         placeholder="Correo electrónico"
+        [(ngModel)]="correo"
+        name="correo"
+        required
       />
 
       <input
         type="password"
         placeholder="Contraseña"
+        [(ngModel)]="password"
+        name="password"
+        required
       />
 
-      <button type="button">
+      <button type="submit">
         Iniciar Sesión
       </button>
+
+      <!-- MENSAJE DEL LOGIN -->
+      <div *ngIf="mensaje" 
+          class="mensaje" 
+          [ngClass]="mensajeTipo">
+        {{ mensaje }}
+      </div>
+
     </form>
+
   </div>
 </div>
