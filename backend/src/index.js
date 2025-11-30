@@ -1,17 +1,20 @@
-const express = require('express');
-const cors = require('cors');
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
 
 const app = express();
-const PORT = 3000;
 
+// MIDDLEWARES (muy importante)
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Endpoint de prueba
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', service: 'Profetime API' });
-});
+// Conexión DB
+const db = require("./config/db");
 
-app.listen(PORT, () => {
-  console.log(`✅ Backend escuchando en http://localhost:${PORT}`);
+// Rutas
+app.use("/api/auth", require("./routes/auth.routes"));
+
+app.listen(process.env.PORT, () => {
+  console.log("🚀 Servidor backend en puerto", process.env.PORT);
 });
