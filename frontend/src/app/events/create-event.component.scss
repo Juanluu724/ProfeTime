@@ -1,0 +1,112 @@
+.overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .45);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000;
+}
+
+.modal {
+    background: white;
+    width: 900px;
+    max-height: 90vh;
+    border-radius: 12px;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.modal-body h4 {
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: block;
+    margin-top: 14px;
+}
+
+input,
+textarea,
+select {
+    width: 100%;
+    padding: 10px;
+    margin-top: 6px;
+    border-radius: 8px;
+    border: 1px solid #dfe2e6;
+    background: #f9fafb;
+}
+
+textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.grid-2.small {
+    grid-template-columns: 1fr auto;
+}
+
+hr {
+    margin: 25px 0;
+    border: none;
+    border-top: 1px solid #e5e7eb;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 18px 24px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.primary {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.secondary {
+    background: white;
+    border: 1px solid #dfe2e6;
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+}
+
+.cancel {
+    background: #e5e7eb;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+}

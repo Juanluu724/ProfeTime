@@ -1,28 +1,33 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClientModule } from '@angular/common/http';
-// CORRECCIÓN 1: Aseguramos que la ruta coincida con la carpeta creada en el paso 1
-// Tienes que entrar a la carpeta 'auth' antes de ir a 'services'
 import { DashboardService, DashboardData } from '../auth/services/dashboard.service';
+import { CreateEventComponent } from '../events/create-event.component';
+
+type EventType = 'tarea' | 'examen' | 'reunion' | 'otro';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, HttpClientModule],
+  imports: [CommonModule, HttpClientModule, CreateEventComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit {
+
   menuCounts = { examenes: 0, tareas: 0, reuniones: 0 };
   notifications: any[] = [];
-  
+
   currentDate = new Date(2026, 0, 1);
   daysInMonth: any[] = [];
   weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-  
-  eventsMap: { [key: string]: string } = {}; 
 
-  // Si hiciste el paso 1, este error de inyección desaparecerá
+  eventsMap: { [key: string]: string } = {};
+
+  // ===== CREATE EVENT =====
+  showCreateEvent = false;
+  selectedType: EventType = 'tarea';
+
   constructor(private dashboardService: DashboardService) {}
 
   ngOnInit() {
@@ -34,8 +39,7 @@ export class DashboardComponent implements OnInit {
       next: (data: DashboardData) => {
         this.menuCounts = data.menuCounts;
         this.notifications = data.notifications;
-        
-        // CORRECCIÓN 2: Agregamos el tipo explícito (evt: any) o usamos el tipo real
+
         data.calendarEvents.forEach((evt: any) => {
           const dateStr = new Date(evt.date).toISOString().split('T')[0];
           this.eventsMap[dateStr] = evt.type;
@@ -43,43 +47,52 @@ export class DashboardComponent implements OnInit {
 
         this.generateCalendar();
       },
-      // CORRECCIÓN 3: Agregamos el tipo explícito (err: any)
-      error: (err: any) => console.error('Error conectando al backend:', err)
+      error: err => console.error(err)
     });
   }
 
   generateCalendar() {
     const year = this.currentDate.getFullYear();
     const month = this.currentDate.getMonth();
-    
+
     const firstDayIndex = new Date(year, month, 1).getDay();
     const totalDays = new Date(year, month + 1, 0).getDate();
-    
+
     const days = [];
 
     for (let i = 0; i < firstDayIndex; i++) {
-      days.push({ day: null, class: 'empty' });
+      days.push({ day: null });
     }
 
     for (let i = 1; i <= totalDays; i++) {
-      const dayString = `${year}-${(month + 1).toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
-      const eventType = this.eventsMap[dayString];
+      const dateStr = `${year}-${(month + 1)
+        .toString()
+        .padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
 
-      days.push({ 
-        day: i, 
-        type: eventType,
-        class: 'active' 
+      days.push({
+        day: i,
+        type: this.eventsMap[dateStr]
       });
     }
 
     this.daysInMonth = days;
   }
 
+  // ===== MODAL =====
+  openCreateEvent(type: EventType) {
+    this.selectedType = type;
+    this.showCreateEvent = true;
+  }
+
+  closeCreateEvent() {
+    this.showCreateEvent = false;
+  }
+
   getNotifClass(type: string): string {
-    const classes: any = { 
-      'examen': 'notif-red', 
-      'tarea': 'notif-green', 
-      'reunion': 'notif-purple' 
+    const classes: any = {
+      examen: 'red',
+      tarea: 'green',
+      reunion: 'purple'
     };
     return classes[type] || '';
   }
