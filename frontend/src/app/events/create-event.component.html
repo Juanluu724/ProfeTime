@@ -1,0 +1,83 @@
+<div class="overlay">
+    <div class="modal">
+
+        <!-- HEADER -->
+        <header class="modal-header">
+            <h2>Crear Nuevo Evento</h2>
+            <button class="close-btn" (click)="close.emit()">✕</button>
+        </header>
+
+        <!-- BODY -->
+        <section class="modal-body">
+
+            <h4>Información Básica</h4>
+
+            <label>Título del evento *</label>
+            <input type="text" placeholder="Ej: Examen de Matemáticas - Álgebra" [(ngModel)]="event.title" />
+
+            <div class="grid-2">
+                <div>
+                    <label>Tipo de evento *</label>
+
+                    <select [(ngModel)]="event.type">
+            <option value="examen">📄 Examen</option>
+            <option value="tarea">✅ Tarea</option>
+            <option value="reunion">🎥 Reunión</option>
+            <option value="otro">📌 Otro</option>
+          </select>
+                </div>
+
+                <div>
+                    <label>Fecha *</label>
+                    <input type="date" [(ngModel)]="event.date" />
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div>
+                    <label>Hora de inicio *</label>
+                    <input type="time" [(ngModel)]="event.startTime" />
+                </div>
+
+                <div>
+                    <label>Hora de fin *</label>
+                    <input type="time" [(ngModel)]="event.endTime" />
+                </div>
+            </div>
+
+            <label>Descripción</label>
+            <textarea placeholder="Describe el evento, incluye detalles importantes..." [(ngModel)]="event.description">
+      </textarea>
+
+            <label>Ubicación</label>
+            <input placeholder="Aula 302, Sala de profesores..." [(ngModel)]="event.location" />
+
+            <hr />
+
+            <h4>Integraciones Google</h4>
+
+            <label>Google Meet</label>
+            <div class="grid-2 small">
+                <input placeholder="https://meet.google.com/..." [(ngModel)]="event.meet" />
+                <button class="secondary">Generar</button>
+            </div>
+
+            <label>Google Drive</label>
+            <div class="grid-2 small">
+                <input placeholder="https://drive.google.com/..." [(ngModel)]="event.drive" />
+                <button class="secondary">Adjuntar</button>
+            </div>
+
+            <label>Google Maps</label>
+            <input placeholder="https://maps.google.com/..." [(ngModel)]="event.maps" />
+
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="modal-footer">
+            <button class="primary" (click)="save()">Guardar evento</button>
+            <button class="cancel" (click)="close.emit()">Cancelar</button>
+        </footer>
+
+    </div>
+</div>

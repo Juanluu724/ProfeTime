@@ -1,51 +1,65 @@
 <div class="layout">
-  <aside class="sidebar">
-    <div class="brand">
-      <span class="icon"></span> 
-      <h2>ProfeTime</h2>
-    </div>
-
-    <button class="btn-primary">+ Crear Evento</button>
-
-    <nav class="menu">
-      <a class="item active">Calendario</a>
-      <a class="item">Examenes <span class="badge">{{ menuCounts.examenes }}</span></a>
-      <a class="item">Tareas <span class="badge">{{ menuCounts.tareas }}</span></a>
-      <a class="item">Reuniones <span class="badge">{{ menuCounts.reuniones }}</span></a>
-      <a class="item">Compartidos</a>
-    </nav>
-
     <aside class="sidebar">
-  <app-notifications [data]="notifications"></app-notifications>
-  
-</aside>
-  </aside>
-
-  <main class="content">
-    <header class="topbar">
-      <div class="title-area">
-        <h1>Enero 2026</h1>
-        <div class="controls">
-          <button>&lt;</button> <button>Hoy</button> <button>&gt;</button>
+        <div class="brand">
+            <span class="icon"></span>
+            <h2>ProfeTime</h2>
         </div>
-      </div>
-      <div class="legend">
-        <span class="dot red"></span> Examenes
-        <span class="dot green"></span> Tareas
-        <span class="dot purple"></span> Reuniones
-      </div>
-    </header>
 
-    <div class="calendar">
-      <div *ngFor="let d of weekDays" class="head">{{ d }}</div>
-      
-      <div *ngFor="let d of daysInMonth" class="cell" [class.empty]="!d.day">
-        <span *ngIf="d.day" class="day-number">{{ d.day }}</span>
-        
-        <div *ngIf="d.eventType" class="event-marker" [ngClass]="d.eventType">
-           {{ d.eventType }}
+        <!-- BOTÓN FUNCIONAL -->
+        <button class="btn-primary" (click)="openCreateEvent()">
+      + Crear Evento
+    </button>
+
+        <nav class="menu">
+            <a class="item active">Calendario</a>
+            <a class="item">
+        Examenes <span class="badge">{{ menuCounts.examenes }}</span>
+      </a>
+            <a class="item">
+        Tareas <span class="badge">{{ menuCounts.tareas }}</span>
+      </a>
+            <a class="item">
+        Reuniones <span class="badge">{{ menuCounts.reuniones }}</span>
+      </a>
+            <a class="item">Compartidos</a>
+        </nav>
+
+        <!-- NOTIFICACIONES -->
+        <app-notifications [data]="notifications"></app-notifications>
+    </aside>
+
+    <main class="content">
+        <header class="topbar">
+            <div class="title-area">
+                <h1>Enero 2026</h1>
+                <div class="controls">
+                    <button>&lt;</button>
+                    <button>Hoy</button>
+                    <button>&gt;</button>
+                </div>
+            </div>
+
+            <div class="legend">
+                <span class="dot red"></span> Examenes
+                <span class="dot green"></span> Tareas
+                <span class="dot purple"></span> Reuniones
+            </div>
+        </header>
+
+        <div class="calendar">
+            <div *ngFor="let d of weekDays" class="head">{{ d }}</div>
+
+            <div *ngFor="let d of daysInMonth" class="cell" [class.empty]="!d.day">
+                <span *ngIf="d.day" class="day-number">{{ d.day }}</span>
+
+                <div *ngIf="d.type" class="event-marker" [ngClass]="d.type">
+                    {{ d.type }}
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </main>
+    </main>
 </div>
+
+<!-- MODAL CREAR EVENTO -->
+<app-create-event *ngIf="showCreateEvent" (close)="closeCreateEvent()">
+</app-create-event>
