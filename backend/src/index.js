@@ -14,6 +14,7 @@ const db = require("./config/db");
 
 // Rutas
 app.use("/api/auth", require("./routes/auth.routes"));
+app.use("/api/dashboard", require("./routes/dashboard.routes")); // <--- ESTA ES LA NUEVA LÍNEA
 
 app.listen(process.env.PORT, () => {
   console.log("🚀 Servidor backend en puerto", process.env.PORT);

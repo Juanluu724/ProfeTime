@@ -1,0 +1,138 @@
+// Variables de color
+$blue: #0d6efd;
+$red: #dc3545;
+$green: #198754;
+$purple: #6f42c1;
+$bg: #f8f9fa;
+$border: #dfe2e6;
+
+.layout {
+  display: flex;
+  height: 100vh;
+  font-family: 'Segoe UI', sans-serif;
+  background: white;
+}
+
+// --- SIDEBAR ---
+.sidebar {
+  width: 260px;
+  border-right: 1px solid $border;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 25px;
+    color: #333;
+  }
+
+  .btn-primary {
+    background: $blue;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    cursor: pointer;
+  }
+
+  .menu .item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    color: #555;
+    cursor: pointer;
+    border-radius: 6px;
+    &:hover, &.active { background: #eef5ff; color: $blue; }
+    
+    .badge { background: #eee; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; }
+  }
+
+  .notifications {
+    margin-top: auto; // Empuja al fondo
+    .notif-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; color: #999; font-size: 0.8rem; }
+    .badge-red { background: $red; color: white; padding: 1px 6px; border-radius: 50%; }
+
+    .card {
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 0.85rem;
+      border-left: 3px solid transparent;
+      
+      // Variantes de color
+      &.red { background: #fff5f5; border-color: $red; .pill { color: $red; background: #ffe0e0; } }
+      &.green { background: #f0fff4; border-color: $green; .pill { color: $green; background: #dfffe5; } }
+      &.purple { background: #f8f0ff; border-color: $purple; .pill { color: $purple; background: #eddfff; } }
+
+      .title { margin: 0 0 5px; font-weight: 500; }
+      .footer { display: flex; justify-content: space-between; color: #777; }
+      .pill { padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    }
+  }
+}
+
+// --- MAIN CONTENT ---
+.content {
+  flex: 1;
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    
+    .title-area { display: flex; gap: 15px; align-items: center; }
+    .legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin: 0 5px 0 15px; }
+    .dot.red { background: $red; } .dot.green { background: $green; } .dot.purple { background: $purple; }
+  }
+
+  .calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    flex: 1; // Ocupa todo el espacio restante
+    border: 1px solid $border;
+
+    .head {
+      background: $bg;
+      padding: 10px;
+      text-align: center;
+      border-bottom: 1px solid $border;
+      border-right: 1px solid $border;
+      font-weight: 600;
+      color: #666;
+    }
+
+    .cell {
+      border-bottom: 1px solid $border;
+      border-right: 1px solid $border;
+      min-height: 100px;
+      padding: 8px;
+      position: relative;
+
+      &.empty { background: #fcfcfc; }
+
+      .day-number { font-weight: bold; color: #444; }
+
+      .event-marker {
+        margin-top: 5px;
+        font-size: 0.75rem;
+        padding: 4px;
+        border-radius: 4px;
+        color: white;
+        text-transform: capitalize;
+        
+        &.examen { background: $red; }
+        &.tarea { background: $green; }
+        &.reunion { background: $purple; }
+      }
+    }
+  }
+}
