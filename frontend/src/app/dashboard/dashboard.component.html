@@ -15,20 +15,10 @@
       <a class="item">Compartidos</a>
     </nav>
 
-    <div class="notifications">
-      <div class="notif-header">
-        <small>NOTIFICACIONES</small>
-        <span class="badge-red">3</span>
-      </div>
-
-      <div *ngFor="let n of notifications" class="card" [ngClass]="getNotifClass(n.type)">
-        <p class="title">{{ n.title }}</p>
-        <div class="footer">
-          <small>{{ n.time }}</small>
-          <span class="pill">{{ n.badge }}</span>
-        </div>
-      </div>
-    </div>
+    <aside class="sidebar">
+  <app-notifications [data]="notifications"></app-notifications>
+  
+</aside>
   </aside>
 
   <main class="content">

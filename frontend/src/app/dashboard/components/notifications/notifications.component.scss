@@ -1,0 +1,116 @@
+// Variables (puedes moverlas a un styles.scss global luego)
+$red-bg: #ffebeb;
+$red-text: #dc3545;
+$purple-bg: #f3eafa;
+$purple-text: #6f42c1;
+$green-bg: #eaf7f0;
+$green-text: #198754;
+$gray-text: #6c757d;
+
+.notifications-container {
+  width: 100%;
+  font-family: 'Segoe UI', sans-serif;
+  margin-top: 30px; // Separación del menú de arriba
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding: 0 5px;
+
+  .label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #a0a0a0; // Gris suave para el título
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .count-badge {
+    background-color: $red-text;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: bold;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px; // Espacio entre notificaciones
+}
+
+.item {
+  display: flex;
+  align-items: flex-start; // Alinear arriba
+  gap: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 0.2s;
+
+  // ESTILOS SEGÚN TIPO (Fondo completo si es Tarea, según la imagen)
+  &.type-tarea {
+    background-color: $green-bg; // El fondo verde suave de la última tarjeta
+  }
+
+  &:hover {
+    background-color: #f8f9fa; // Hover genérico
+    &.type-tarea { background-color: darken($green-bg, 3%); }
+  }
+
+  // --- ICONO ---
+  .icon-area {
+    margin-top: 2px;
+    .material-icon {
+      font-size: 1.1rem;
+      &.examen { color: $red-text; }
+      &.reunion { color: $purple-text; }
+      &.tarea { color: $green-text; }
+      &.compartido { color: $gray-text; } // Color azulado para shared
+    }
+  }
+
+  // --- CONTENIDO ---
+  .content-area {
+    flex: 1; // Ocupa el espacio disponible
+    .title {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 500; // Semi-bold
+      color: #333;
+      line-height: 1.3;
+      margin-bottom: 4px;
+    }
+    .time-ago {
+      display: block;
+      font-size: 0.75rem;
+      color: #888;
+    }
+  }
+
+  // --- BADGE DE TIEMPO (24h, 18h) ---
+  .badge-area {
+    align-self: flex-end; // Alinear abajo a la derecha
+    
+    .time-pill {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+
+      // Colores del pill
+      &.examen { background-color: $red-bg; color: $red-text; }
+      &.reunion { background-color: $purple-bg; color: $purple-text; }
+      &.tarea { background-color: #d1e7dd; color: $green-text; } // Un verde un poco más oscuro para el texto
+      &.compartido { display: none; } // Los compartidos a veces no tienen badge de tiempo urgente
+    }
+  }
+}

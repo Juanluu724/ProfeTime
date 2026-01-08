@@ -4,13 +4,13 @@ import { HttpClientModule } from '@angular/common/http';
 // CORRECCIÓN 1: Aseguramos que la ruta coincida con la carpeta creada en el paso 1
 // Tienes que entrar a la carpeta 'auth' antes de ir a 'services'
 import { DashboardService, DashboardData } from '../auth/services/dashboard.service';
-
+import { NotificationsComponent } from './components/notifications/notifications.component';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, HttpClientModule],
+  imports: [CommonModule, HttpClientModule, NotificationsComponent],
   templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.scss']
+  styleUrls: ['./dashboard.component.scss'],
 })
 export class DashboardComponent implements OnInit {
   menuCounts = { examenes: 0, tareas: 0, reuniones: 0 };
