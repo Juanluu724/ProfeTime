@@ -10,8 +10,13 @@ type EventType = 'tarea' | 'examen' | 'reunion' | 'otro';
   selector: 'app-dashboard',
   standalone: true,
   imports: [CommonModule, HttpClientModule, CreateEventComponent],
+import { NotificationsComponent } from './components/notifications/notifications.component';
+@Component({
+  selector: 'app-dashboard',
+  standalone: true,
+  imports: [CommonModule, HttpClientModule, NotificationsComponent],
   templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.scss']
+  styleUrls: ['./dashboard.component.scss'],
 })
 export class DashboardComponent implements OnInit {
 
