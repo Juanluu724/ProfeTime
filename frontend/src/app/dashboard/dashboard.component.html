@@ -2,7 +2,8 @@
   
   <aside class="sidebar">
     <div class="brand">
-      <span class="icon">📅</span> <h2>ProfeTime</h2>
+      <span class="icon"></span>
+      <h2>ProfeTime</h2>
     </div>
 
     <button class="btn-primary" (click)="openCreateEvent()">
@@ -31,11 +32,12 @@
     
     <header class="topbar">
       <div class="title-area">
-        <h1>Enero 2026</h1>
+        <h1>{{ monthYearDisplay }}</h1>
+        
         <div class="controls">
-          <button>&lt;</button>
-          <button>Hoy</button>
-          <button>&gt;</button>
+          <button (click)="changeMonth(-1)">&lt;</button>
+          <button (click)="goToToday()">Hoy</button>
+          <button (click)="changeMonth(1)">&gt;</button>
         </div>
       </div>
 
@@ -66,7 +68,8 @@
           <div *ngIf="d.type" 
                class="event-dot" 
                [ngClass]="d.type"
-               title="{{ d.type }}"> </div>
+               title="{{ d.type }}">
+          </div>
 
         </div>
       </div>
