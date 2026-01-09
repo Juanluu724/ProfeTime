@@ -129,7 +129,14 @@ export class DashboardComponent implements OnInit {
   }
 
   openCreateEvent() { this.showCreateEvent = true; }
+  
   closeCreateEvent() { this.showCreateEvent = false; }
+
+  // NUEVO MÉTODO para recargar tras guardar
+  onEventSaved() {
+    this.loadDashboardData(); // Recarga los datos del backend
+    this.showCreateEvent = false; // Cierra el modal
+  }
   
   getNotifClass(type: string): string {
     const classes: any = { examen: 'red', tarea: 'green', reunion: 'purple' };

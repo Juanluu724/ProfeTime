@@ -4,20 +4,32 @@ const cors = require("cors");
 
 const app = express();
 
-// MIDDLEWARES
-app.use(cors());
+// 1. MIDDLEWARE CORS (Configuración permisiva total para desarrollo)
+app.use(cors()); // Al dejarlo vacío, acepta peticiones desde CUALQUIER origen (*)
+
+// 2. LOGGING (Para ver si la petición llega al servidor)
+app.use((req, res, next) => {
+    console.log(`Petición recibida: ${req.method} ${req.url}`);
+    next();
+});
+
+// 3. PARSEO DEL BODY
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// CONEXIÓN DB (se inicializa aquí)
+// 4. CONEXIÓN BASE DE DATOS
+// (Si esto falla, el servidor podría detenerse, revisa tu terminal)
 require("./src/config/db");
 
-// RUTAS
+// 5. RUTAS
 app.use("/api/auth", require("./src/routes/auth.routes"));
 app.use("/api/dashboard", require("./src/routes/dashboard.routes"));
-app.use("/api/events", require("./src/routes/events.routes")); // 
+app.use("/api/events", require("./src/routes/events.routes")); 
 
-// SERVIDOR
-app.listen(process.env.PORT, () => {
-    console.log(" Servidor backend en puerto", process.env.PORT);
+// 6. ARRANCAR SERVIDOR
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log("---------------------------------------------------");
+    console.log(`>>> Servidor BACKEND corriendo en http://localhost:${PORT}`);
+    console.log("---------------------------------------------------");
 });

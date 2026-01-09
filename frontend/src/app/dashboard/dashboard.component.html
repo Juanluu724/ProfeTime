@@ -78,5 +78,8 @@
   </main>
 </div>
 
-<app-create-event *ngIf="showCreateEvent" (close)="closeCreateEvent()">
+<app-create-event 
+    *ngIf="showCreateEvent" 
+    (close)="closeCreateEvent()"
+    (saved)="onEventSaved()">
 </app-create-event>

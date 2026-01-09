@@ -26,10 +26,16 @@ export interface DashboardData {
 })
 export class DashboardService {
   private apiUrl = 'http://localhost:3000/api/dashboard';
+  private eventsUrl = 'http://localhost:3000/api/events'; // Nueva URL base para eventos
 
   constructor(private http: HttpClient) { }
 
   getData(): Observable<DashboardData> {
     return this.http.get<DashboardData>(this.apiUrl);
+  }
+
+  // NUEVO MÉTODO
+  createEvent(event: any): Observable<any> {
+    return this.http.post(`${this.eventsUrl}/create`, event);
   }
 }
