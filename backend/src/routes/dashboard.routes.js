@@ -1,89 +1,71 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../config/db"); // Tu conexión a la DB
+const db = require("../config/db");
 
-router.get("/", async (req, res) => {
-  try {
-    // 1. OBTENER EL ID DEL USUARIO
-    // Si tienes middleware de auth, usa: const userId = req.user.codigo_usuario;
-    // Por ahora, usaremos uno fijo para probar (asegúrate de que este usuario exista en tu DB)
-    const userId = 'U001'; 
+router.get("/", async(req, res) => {
+    try {
+        // ⚠️ TEMPORAL (luego irá con JWT)
+        const userId = "U001";
 
-    // 2. CONSULTAS A LA BASE DE DATOS
-    
-    // A) Obtener Eventos del Calendario
-    // (Asumiendo que usas mysql2 con promesas. Si usas callbacks, avísame)
-    const [eventos] = await db.promise().query(
-      `SELECT codigo_evento, fec_inicio, tipo 
+        // EVENTOS
+        const [eventos] = await db.promise().query(
+            `SELECT codigo_evento, fec_inicio, tipo 
        FROM evento 
-       WHERE codigo_usuario_fk = ?`, 
-      [userId]
-    );
+       WHERE codigo_usuario_fk = ?`, [userId]
+        );
 
-    // B) Contar tipos de eventos para el menú lateral
-    const [conteo] = await db.promise().query(
-      `SELECT tipo, COUNT(*) as total 
-       FROM evento 
-       WHERE codigo_usuario_fk = ? 
-       GROUP BY tipo`, 
-      [userId]
-    );
+        // CONTADORES
+        const [conteo] = await db.promise().query(
+            `SELECT tipo, COUNT(*) AS total
+       FROM evento
+       WHERE codigo_usuario_fk = ?
+       GROUP BY tipo`, [userId]
+        );
 
-    // C) Obtener Notificaciones
-    // Unimos con la tabla evento para saber la fecha
-    const [notificaciones] = await db.promise().query(
-      `SELECT n.codigo_notificacion, n.nombre as titulo, n.codigo_evento, e.fec_inicio, e.tipo
+        // NOTIFICACIONES
+        const [notificaciones] = await db.promise().query(
+            `SELECT n.codigo_notificacion, n.nombre AS titulo, e.fec_inicio, e.tipo
        FROM notificacion n
        JOIN evento e ON n.codigo_evento = e.codigo_evento
        WHERE e.codigo_usuario_fk = ?
        ORDER BY e.fec_inicio ASC
-       LIMIT 3`,
-      [userId]
-    );
+       LIMIT 3`, [userId]
+        );
 
-    // 3. PROCESAR DATOS PARA EL FRONTEND
-    
-    // Formatear contadores
-    const counts = { examenes: 0, tareas: 0, reuniones: 0 };
-    conteo.forEach(c => {
-      if (c.tipo === 'examen') counts.examenes = c.total;
-      if (c.tipo === 'tarea') counts.tareas = c.total;
-      if (c.tipo === 'reunion') counts.reuniones = c.total;
-    });
+        // PROCESAR CONTADORES
+        const menuCounts = { examenes: 0, tareas: 0, reuniones: 0 };
 
-    // Formatear notificaciones (calcular "hace X horas" o "en X días")
-    const notifFormatted = notificaciones.map(n => {
-      const fechaEvento = new Date(n.fec_inicio);
-      const hoy = new Date();
-      const diffTime = Math.abs(fechaEvento - hoy);
-      const diffHours = Math.ceil(diffTime / (1000 * 60 * 60)); 
-      
-      return {
-        id: n.codigo_notificacion,
-        type: n.tipo,
-        title: n.titulo,
-        time: `Fecha: ${fechaEvento.toLocaleDateString()}`, // Puedes mejorar esto con una librería como dayjs
-        badge: `${diffHours}h`
-      };
-    });
+        conteo.forEach(c => {
+            if (c.tipo === "examen") menuCounts.examenes = c.total;
+            if (c.tipo === "tarea") menuCounts.tareas = c.total;
+            if (c.tipo === "reunion") menuCounts.reuniones = c.total;
+        });
 
-    // Formatear eventos para el calendario
-    const calendarEvents = eventos.map(e => ({
-      date: e.fec_inicio, // Asegúrate de que el formato sea YYYY-MM-DD
-      type: e.tipo
-    }));
+        // PROCESAR NOTIFICACIONES
+        const notifications = notificaciones.map(n => ({
+            id: n.codigo_notificacion,
+            type: n.tipo,
+            title: n.titulo,
+            time: new Date(n.fec_inicio).toLocaleDateString(),
+            badge: "24h"
+        }));
 
-    // 4. RESPONDER AL FRONTEND
-    res.json({
-      menuCounts: counts,
-      notifications: notifFormatted,
-      calendarEvents: calendarEvents
-    });
+        // EVENTOS CALENDARIO
+        const calendarEvents = eventos.map(e => ({
+            date: e.fec_inicio,
+            type: e.tipo
+        }));
 
-  } catch (error) {
-    console.error("Error en dashboard:", error);
-    res.status(500).json({ message: "Error al obtener datos del dashboard" });
-  }
+        res.json({
+            menuCounts,
+            notifications,
+            calendarEvents
+        });
+
+    } catch (error) {
+        console.error("Error dashboard:", error);
+        res.status(500).json({ msg: "Error dashboard" });
+    }
 });
 
 module.exports = router;

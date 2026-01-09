@@ -4,18 +4,20 @@ const cors = require("cors");
 
 const app = express();
 
-// MIDDLEWARES (muy importante)
+// MIDDLEWARES
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Conexión DB
-const db = require("./src/config/db");
+// CONEXIÓN DB (se inicializa aquí)
+require("./src/config/db");
 
-// Rutas
+// RUTAS
 app.use("/api/auth", require("./src/routes/auth.routes"));
-app.use("/api/dashboard", require("./src/routes/dashboard.routes")); // <--- ESTA ES LA NUEVA LÍNEA
+app.use("/api/dashboard", require("./src/routes/dashboard.routes"));
+app.use("/api/events", require("./src/routes/events.routes")); // 
 
+// SERVIDOR
 app.listen(process.env.PORT, () => {
-    console.log("🚀 Servidor backend en puerto", process.env.PORT);
+    console.log(" Servidor backend en puerto", process.env.PORT);
 });
