@@ -1,16 +1,18 @@
-// Variables de color
+// --- VARIABLES DE COLOR ---
 $blue: #0d6efd;
 $red: #dc3545;
 $green: #198754;
 $purple: #6f42c1;
-$bg: #f8f9fa;
-$border: #dfe2e6;
+$bg-light: #f8f9fa;
+$border: #e0e0e0;
+$text-muted: #adb5bd; // Color para días del mes anterior
 
 .layout {
   display: flex;
   height: 100vh;
   font-family: 'Segoe UI', sans-serif;
   background: white;
+  color: #333;
 }
 
 // --- SIDEBAR ---
@@ -20,13 +22,21 @@ $border: #dfe2e6;
   padding: 20px;
   display: flex;
   flex-direction: column;
+  background: white;
+  z-index: 10;
 
   .brand {
     display: flex;
     align-items: center;
     gap: 10px;
     margin-bottom: 25px;
-    color: #333;
+    
+    h2 {
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #333;
+    }
   }
 
   .btn-primary {
@@ -36,102 +46,195 @@ $border: #dfe2e6;
     padding: 12px;
     border-radius: 8px;
     font-weight: 600;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
     cursor: pointer;
+    transition: background 0.2s;
+    &:hover { background: darken($blue, 5%); }
   }
 
   .menu .item {
     display: flex;
     justify-content: space-between;
-    padding: 10px;
+    padding: 10px 12px;
     color: #555;
     cursor: pointer;
     border-radius: 6px;
-    &:hover, &.active { background: #eef5ff; color: $blue; }
+    margin-bottom: 5px;
+    text-decoration: none;
+    transition: background 0.2s;
+
+    &:hover, &.active { 
+      background: #eef5ff; 
+      color: $blue; 
+      font-weight: 500;
+    }
     
-    .badge { background: #eee; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; }
-  }
-
-  .notifications {
-    margin-top: auto; // Empuja al fondo
-    .notif-header { display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: bold; color: #999; font-size: 0.8rem; }
-    .badge-red { background: $red; color: white; padding: 1px 6px; border-radius: 50%; }
-
-    .card {
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      font-size: 0.85rem;
-      border-left: 3px solid transparent;
-      
-      // Variantes de color
-      &.red { background: #fff5f5; border-color: $red; .pill { color: $red; background: #ffe0e0; } }
-      &.green { background: #f0fff4; border-color: $green; .pill { color: $green; background: #dfffe5; } }
-      &.purple { background: #f8f0ff; border-color: $purple; .pill { color: $purple; background: #eddfff; } }
-
-      .title { margin: 0 0 5px; font-weight: 500; }
-      .footer { display: flex; justify-content: space-between; color: #777; }
-      .pill { padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    .badge { 
+      background: #eee; 
+      padding: 2px 8px; 
+      border-radius: 10px; 
+      font-size: 0.8em;
+      color: #666;
     }
   }
+
+  // Nota: Si usas <app-notifications>, los estilos de las tarjetas
+  // deberían estar preferiblemente en notifications.component.scss.
+  // Pero si los mantienes aquí, asegúrate de usar ::ng-deep si hay problemas de encapsulamiento.
 }
 
 // --- MAIN CONTENT ---
 .content {
   flex: 1;
-  padding: 25px;
+  padding: 30px;
   display: flex;
   flex-direction: column;
+  background-color: white;
 
+  // 1. TOPBAR
   .topbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
     
-    .title-area { display: flex; gap: 15px; align-items: center; }
-    .legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin: 0 5px 0 15px; }
-    .dot.red { background: $red; } .dot.green { background: $green; } .dot.purple { background: $purple; }
-  }
-
-  .calendar {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    flex: 1; // Ocupa todo el espacio restante
-    border: 1px solid $border;
-
-    .head {
-      background: $bg;
-      padding: 10px;
-      text-align: center;
-      border-bottom: 1px solid $border;
-      border-right: 1px solid $border;
-      font-weight: 600;
-      color: #666;
+    .title-area { 
+      display: flex; 
+      gap: 20px; 
+      align-items: center; 
+      
+      h1 { margin: 0; font-size: 1.5rem; }
+      
+      .controls {
+        display: flex;
+        gap: 5px;
+        button {
+          border: 1px solid $border;
+          background: white;
+          padding: 5px 12px;
+          border-radius: 6px;
+          cursor: pointer;
+          color: #555;
+          &:hover { background: $bg-light; }
+        }
+      }
     }
 
-    .cell {
-      border-bottom: 1px solid $border;
-      border-right: 1px solid $border;
-      min-height: 100px;
-      padding: 8px;
-      position: relative;
-
-      &.empty { background: #fcfcfc; }
-
-      .day-number { font-weight: bold; color: #444; }
-
-      .event-marker {
-        margin-top: 5px;
-        font-size: 0.75rem;
-        padding: 4px;
-        border-radius: 4px;
-        color: white;
-        text-transform: capitalize;
+    .legend {
+      display: flex;
+      align-items: center;
+      font-size: 0.9rem;
+      color: #666;
+      
+      .dot { 
+        display: inline-block; 
+        width: 10px; 
+        height: 10px; 
+        border-radius: 50%; 
+        margin: 0 6px 0 15px; 
         
-        &.examen { background: $red; }
-        &.tarea { background: $green; }
-        &.reunion { background: $purple; }
+        &.red { background: $red; }
+        &.green { background: $green; }
+        &.purple { background: $purple; }
+      }
+    }
+  }
+
+  // 2. ESTRUCTURA DEL CALENDARIO (GRID + GAP)
+  .calendar-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    
+    // Cabecera Semanal (Dom, Lun...)
+    .week-header {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr); // 7 columnas iguales
+      gap: 15px; // Espacio entre columnas
+      margin-bottom: 10px;
+
+      .day-name {
+        padding-left: 5px;
+        font-weight: 600;
+        color: #888;
+        font-size: 0.9rem;
+        text-transform: capitalize;
+      }
+    }
+
+    // Cuerpo del Calendario
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr); // 7 columnas iguales
+      gap: 15px; // ESTA ES LA CLAVE PARA LA SEPARACIÓN
+      flex: 1; // Ocupar el resto de la altura
+
+      // Tarjetas individuales de cada día
+      .day-card {
+        border: 1px solid $border;
+        border-radius: 8px; // Bordes redondeados
+        background: white;
+        padding: 10px;
+        min-height: 100px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        transition: all 0.2s ease;
+
+        // Estilo del número
+        .day-number {
+          font-weight: 500;
+          color: #444;
+          width: 28px;
+          height: 28px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          font-size: 0.9rem;
+        }
+
+        // --- ESTADOS ---
+
+        // Días del mes anterior/siguiente (Gris)
+        &.faded {
+          background-color: #fafafa;
+          border-color: #f0f0f0;
+          .day-number { color: $text-muted; }
+        }
+
+        // Día Seleccionado (Azul)
+        &.selected {
+          border: 2px solid $blue;
+          background: white;
+          box-shadow: 0 4px 12px rgba($blue, 0.1);
+
+          .day-number {
+            background-color: $blue;
+            color: white;
+            font-weight: 700;
+          }
+        }
+
+        // Hover simple
+        &:hover:not(.selected):not(.faded) {
+          border-color: darken($border, 15%);
+          transform: translateY(-2px);
+        }
+
+        // Puntito de evento
+        .event-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          align-self: flex-end; // Poner el punto abajo a la derecha
+          margin-bottom: 2px;
+          margin-right: 2px;
+          
+          &.examen { background-color: $red; box-shadow: 0 0 0 2px lighten($red, 35%); }
+          &.tarea { background-color: $green; box-shadow: 0 0 0 2px lighten($green, 45%); }
+          &.reunion { background-color: $purple; box-shadow: 0 0 0 2px lighten($purple, 35%); }
+        }
       }
     }
   }
