@@ -1,241 +1,39 @@
-// --- VARIABLES DE COLOR ---
-$blue: #0d6efd;
-$red: #dc3545;
-$green: #198754;
-$purple: #6f42c1;
-$bg-light: #f8f9fa;
-$border: #e0e0e0;
-$text-muted: #adb5bd; // Color para días del mes anterior
-
-.layout {
-  display: flex;
-  height: 100vh;
-  font-family: 'Segoe UI', sans-serif;
-  background: white;
-  color: #333;
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 15px;
 }
 
-// --- SIDEBAR ---
-.sidebar {
-  width: 260px;
-  border-right: 1px solid $border;
-  padding: 20px;
+.day-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 8px;
+  min-height: 90px;
   display: flex;
   flex-direction: column;
-  background: white;
-  z-index: 10;
-
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 25px;
-    
-    h2 {
-      margin: 0;
-      font-size: 1.7rem;
-      font-weight: 700;
-      color: #333;
-    }
-  }
-
-  .btn-primary {
-    background: $blue;
-    color: white;
-    border: none;
-    padding: 12px;
-    border-radius: 8px;
-    font-weight: 600;
-    margin-bottom: 30px;
-    cursor: pointer;
-    transition: background 0.2s;
-    &:hover { background: darken($blue, 5%); }
-  }
-
-  .menu .item {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 12px;
-    color: #555;
-    cursor: pointer;
-    border-radius: 6px;
-    margin-bottom: 5px;
-    text-decoration: none;
-    transition: background 0.2s;
-
-    &:hover, &.active { 
-      background: #eef5ff; 
-      color: $blue; 
-      font-weight: 500;
-    }
-    
-    .badge { 
-      background: #eee; 
-      padding: 2px 8px; 
-      border-radius: 10px; 
-      font-size: 0.8em;
-      color: #666;
-    }
-  }
-
-  // Nota: Si usas <app-notifications>, los estilos de las tarjetas
-  // deberían estar preferiblemente en notifications.component.scss.
-  // Pero si los mantienes aquí, asegúrate de usar ::ng-deep si hay problemas de encapsulamiento.
+  justify-content: space-between;
 }
 
-// --- MAIN CONTENT ---
-.content {
-  flex: 1;
-  padding: 30px;
+.day-number {
+  font-weight: 600;
+}
+
+.events {
   display: flex;
-  flex-direction: column;
-  background-color: white;
+  gap: 5px;
+  justify-content: flex-end;
+}
 
-  // 1. TOPBAR
-  .topbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-    
-    .title-area { 
-      display: flex; 
-      gap: 20px; 
-      align-items: center; 
-      
-      h1 { margin: 0; font-size: 1.5rem; }
-      
-      .controls {
-        display: flex;
-        gap: 5px;
-        button {
-          border: 1px solid $border;
-          background: white;
-          padding: 5px 12px;
-          border-radius: 6px;
-          cursor: pointer;
-          color: #555;
-          &:hover { background: $bg-light; }
-        }
-      }
-    }
+.event-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
 
-    .legend {
-      display: flex;
-      align-items: center;
-      font-size: 0.9rem;
-      color: #666;
-      
-      .dot { 
-        display: inline-block; 
-        width: 10px; 
-        height: 10px; 
-        border-radius: 50%; 
-        margin: 0 6px 0 15px; 
-        
-        &.red { background: $red; }
-        &.green { background: $green; }
-        &.purple { background: $purple; }
-      }
-    }
-  }
+  &.examen { background: #dc3545; }
+  &.tarea { background: #198754; }
+  &.reunion { background: #6f42c1; }
+}
 
-  // 2. ESTRUCTURA DEL CALENDARIO (GRID + GAP)
-  .calendar-wrapper {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    
-    // Cabecera Semanal (Dom, Lun...)
-    .week-header {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr); // 7 columnas iguales
-      gap: 15px; // Espacio entre columnas
-      margin-bottom: 10px;
-
-      .day-name {
-        padding-left: 5px;
-        font-weight: 600;
-        color: #888;
-        font-size: 0.9rem;
-        text-transform: capitalize;
-      }
-    }
-
-    // Cuerpo del Calendario
-    .calendar-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr); // 7 columnas iguales
-      gap: 15px; // ESTA ES LA CLAVE PARA LA SEPARACIÓN
-      flex: 1; // Ocupar el resto de la altura
-
-      // Tarjetas individuales de cada día
-      .day-card {
-        border: 1px solid $border;
-        border-radius: 8px; // Bordes redondeados
-        background: white;
-        padding: 10px;
-        min-height: 100px;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        transition: all 0.2s ease;
-
-        // Estilo del número
-        .day-number {
-          font-weight: 500;
-          color: #444;
-          width: 28px;
-          height: 28px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 50%;
-          font-size: 0.9rem;
-        }
-
-        // --- ESTADOS ---
-
-        // Días del mes anterior/siguiente (Gris)
-        &.faded {
-          background-color: #fafafa;
-          border-color: #f0f0f0;
-          .day-number { color: $text-muted; }
-        }
-
-        // Día Seleccionado (Azul)
-        &.selected {
-          border: 2px solid $blue;
-          background: white;
-          box-shadow: 0 4px 12px rgba($blue, 0.1);
-
-          .day-number {
-            background-color: $blue;
-            color: white;
-            font-weight: 700;
-          }
-        }
-
-        // Hover simple
-        &:hover:not(.selected):not(.faded) {
-          border-color: darken($border, 15%);
-          transform: translateY(-2px);
-        }
-
-        // Puntito de evento
-        .event-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          align-self: flex-end; // Poner el punto abajo a la derecha
-          margin-bottom: 2px;
-          margin-right: 2px;
-          
-          &.examen { background-color: $red; box-shadow: 0 0 0 2px lighten($red, 35%); }
-          &.tarea { background-color: $green; box-shadow: 0 0 0 2px lighten($green, 45%); }
-          &.reunion { background-color: $purple; box-shadow: 0 0 0 2px lighten($purple, 35%); }
-        }
-      }
-    }
-  }
+.faded {
+  opacity: 0.4;
 }

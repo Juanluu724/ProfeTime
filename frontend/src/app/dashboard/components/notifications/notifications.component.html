@@ -1,0 +1,14 @@
+<div class="notifications">
+  <h4>Notificaciones</h4>
+
+  <div *ngIf="!data || data.length === 0" class="empty">
+    No hay notificaciones
+  </div>
+
+  <div *ngFor="let n of data" class="notification-item">
+    <span class="type">{{ n.type }}</span>
+    <span class="title">{{ n.title }}</span>
+    <span class="time">{{ n.time }}</span>
+    <span class="badge">{{ n.badge }}</span>
+  </div>
+</div>

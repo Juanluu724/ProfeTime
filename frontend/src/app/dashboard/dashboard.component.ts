@@ -1,145 +1,135 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 
-import { DashboardService, DashboardData } from '../auth/services/dashboard.service';
-import { NotificationsComponent } from './components/notifications/notifications.component';
-import { CreateEventComponent } from '../events/create-event.component';
+interface CalendarEvent {
+  date: string; // yyyy-mm-dd
+  type: string; // examen | tarea | reunion
+}
 
 @Component({
   selector: 'app-dashboard',
-  standalone: true,
-  imports: [
-    CommonModule,
-    HttpClientModule,
-    NotificationsComponent,
-    CreateEventComponent
-  ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit {
 
-  menuCounts = { examenes: 0, tareas: 0, reuniones: 0 };
-  notifications: any[] = [];
-
-  // CAMBIO 1: Usamos 'new Date()' vacío para que coja la fecha real de hoy
-  currentDate = new Date(); 
-  
-  weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-  daysInMonth: any[] = [];
-  eventsMap: { [key: string]: string } = {};
-
   showCreateEvent = false;
 
-  constructor(private dashboardService: DashboardService) { }
+  menuCounts = {
+    examenes: 0,
+    tareas: 0,
+    reuniones: 0
+  };
 
-  get monthYearDisplay(): string {
-    const str = this.currentDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  }
+  notifications: any[] = [];
+  calendarEvents: CalendarEvent[] = [];
+
+  currentDate: Date = new Date();
+  monthYearDisplay = '';
+
+  weekDays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+  daysInMonth: any[] = [];
+
+  constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
-    this.generateCalendar();
-    this.loadDashboardData();
+    this.updateMonthDisplay();
+    this.loadDashboard();
+    this.loadEvents();
   }
 
-  changeMonth(offset: number) {
-    const newDate = new Date(this.currentDate);
-    newDate.setMonth(newDate.getMonth() + offset);
-    this.currentDate = newDate;
-    this.generateCalendar();
-  }
-
-  // CAMBIO 2: El botón "Hoy" ahora te lleva a la fecha real
-  goToToday() {
-    this.currentDate = new Date(); 
-    this.generateCalendar();
-  }
-
-  loadDashboardData() {
-    this.dashboardService.getData().subscribe({
-      next: (data: DashboardData) => {
+  // =====================
+  // DASHBOARD
+  // =====================
+  loadDashboard() {
+    this.http.get<any>('http://localhost:3000/api/dashboard')
+      .subscribe(data => {
         this.menuCounts = data.menuCounts;
         this.notifications = data.notifications;
-        data.calendarEvents.forEach((evt: any) => {
-          const dateStr = new Date(evt.date).toISOString().split('T')[0];
-          this.eventsMap[dateStr] = evt.type;
-        });
+      });
+  }
+
+  // =====================
+  // EVENTOS
+  // =====================
+  loadEvents() {
+    this.http.get<CalendarEvent[]>('http://localhost:3000/api/events')
+      .subscribe(events => {
+        this.calendarEvents = events;
         this.generateCalendar();
-      },
-      error: err => console.error('Error conectando al backend:', err)
+      });
+  }
+
+  onEventSaved() {
+    this.showCreateEvent = false;
+    this.loadDashboard();
+    this.loadEvents(); // 🔥 actualización en tiempo real
+  }
+
+  openCreateEvent() {
+    this.showCreateEvent = true;
+  }
+
+  closeCreateEvent() {
+    this.showCreateEvent = false;
+  }
+
+  // =====================
+  // CALENDARIO
+  // =====================
+  updateMonthDisplay() {
+    this.monthYearDisplay = this.currentDate.toLocaleDateString('es-ES', {
+      month: 'long',
+      year: 'numeric'
     });
   }
 
+  changeMonth(offset: number) {
+    this.currentDate = new Date(
+      this.currentDate.getFullYear(),
+      this.currentDate.getMonth() + offset,
+      1
+    );
+    this.updateMonthDisplay();
+    this.generateCalendar();
+  }
+
+  goToToday() {
+    this.currentDate = new Date();
+    this.updateMonthDisplay();
+    this.generateCalendar();
+  }
+
   generateCalendar() {
+    this.daysInMonth = [];
+
     const year = this.currentDate.getFullYear();
     const month = this.currentDate.getMonth();
 
-    const firstDayIndex = new Date(year, month, 1).getDay();
-    const lastDayCurrentMonth = new Date(year, month + 1, 0).getDate();
-    const lastDayPrevMonth = new Date(year, month, 0).getDate();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDay = (firstDay.getDay() + 6) % 7;
 
-    // CAMBIO 3: Guardamos la fecha real de hoy en una variable para comparar
-    const todayReal = new Date();
-
-    const days = [];
-
-    // A) Mes anterior
-    for (let i = firstDayIndex; i > 0; i--) {
-      days.push({
-        day: lastDayPrevMonth - i + 1,
+    // 🔹 Días del mes anterior
+    for (let i = startDay - 1; i >= 0; i--) {
+      this.daysInMonth.push({
+        day: new Date(year, month, -i).getDate(),
         isCurrentMonth: false,
-        isSelected: false, // Nunca seleccionamos días del mes pasado
         type: null
       });
     }
 
-    // B) Mes actual
-    for (let i = 1; i <= lastDayCurrentMonth; i++) {
-      const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
+    // 🔹 Días del mes actual
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
-      // LÓGICA DE SELECCIÓN REAL:
-      // Comprobamos si el día 'i' coincide con el día real, 
-      // y si el mes/año que estamos viendo coinciden con el mes/año real.
-      const isToday = (i === todayReal.getDate()) && 
-                      (month === todayReal.getMonth()) && 
-                      (year === todayReal.getFullYear());
+      const event = this.calendarEvents.find(e => e.date.startsWith(dateStr));
 
-      days.push({
-        day: i,
+      this.daysInMonth.push({
+        day: d,
         isCurrentMonth: true,
-        isSelected: isToday, // <--- Aquí aplicamos el booleano
-        type: this.eventsMap[dateStr]
+        type: event ? event.type : null
       });
     }
-
-    // C) Mes siguiente
-    const remainingCells = 42 - days.length;
-    for (let i = 1; i <= remainingCells; i++) {
-      days.push({
-        day: i,
-        isCurrentMonth: false,
-        isSelected: false,
-        type: null
-      });
-    }
-
-    this.daysInMonth = days;
   }
-
-  openCreateEvent() { this.showCreateEvent = true; }
-  
-  closeCreateEvent() { this.showCreateEvent = false; }
-
-  // NUEVO MÉTODO para recargar tras guardar
-  onEventSaved() {
-    this.loadDashboardData(); // Recarga los datos del backend
-    this.showCreateEvent = false; // Cierra el modal
-  }
-  
-  getNotifClass(type: string): string {
-    const classes: any = { examen: 'red', tarea: 'green', reunion: 'purple' };
-    return classes[type] || '';
-  }
-} 
+}

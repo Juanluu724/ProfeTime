@@ -1,39 +1,23 @@
 <div class="layout">
-  
-  <aside class="sidebar">
-    <div class="brand">
-      <span class="icon"></span>
-      <h2>ProfeTime</h2>
-    </div>
 
-    <button class="btn-primary" (click)="openCreateEvent()">
-      + Crear Evento
-    </button>
+  <aside class="sidebar">
+    <h2>ProfeTime</h2>
+
+    <button class="btn-primary" (click)="openCreateEvent()">+ Crear Evento</button>
 
     <nav class="menu">
       <a class="item active">Calendario</a>
-      <a class="item">
-        Examenes <span class="badge">{{ menuCounts.examenes }}</span>
-      </a>
-      <a class="item">
-        Tareas <span class="badge">{{ menuCounts.tareas }}</span>
-      </a>
-      <a class="item">
-        Reuniones <span class="badge">{{ menuCounts.reuniones }}</span>
-      </a>
-      <a class="item">Compartidos</a>
+      <a class="item">Exámenes <span class="badge">{{ menuCounts.examenes }}</span></a>
+      <a class="item">Tareas <span class="badge">{{ menuCounts.tareas }}</span></a>
+      <a class="item">Reuniones <span class="badge">{{ menuCounts.reuniones }}</span></a>
     </nav>
-
-    <app-notifications [data]="notifications"></app-notifications>
   </aside>
 
-
   <main class="content">
-    
+
     <header class="topbar">
       <div class="title-area">
         <h1>{{ monthYearDisplay }}</h1>
-        
         <div class="controls">
           <button (click)="changeMonth(-1)">&lt;</button>
           <button (click)="goToToday()">Hoy</button>
@@ -42,44 +26,38 @@
       </div>
 
       <div class="legend">
-        <span class="dot red"></span> Examenes
+        <span class="dot red"></span> Exámenes
         <span class="dot green"></span> Tareas
         <span class="dot purple"></span> Reuniones
       </div>
     </header>
 
-
     <div class="calendar-wrapper">
-      
       <div class="week-header">
-        <div *ngFor="let day of weekDays" class="day-name">{{ day }}</div>
+        <div *ngFor="let d of weekDays" class="day-name">{{ d }}</div>
       </div>
 
       <div class="calendar-grid">
-        <div *ngFor="let d of daysInMonth" 
+        <div *ngFor="let d of daysInMonth"
              class="day-card"
-             [ngClass]="{
-               'faded': !d.isCurrentMonth, 
-               'selected': d.isSelected
-             }">
-          
+             [class.faded]="!d.isCurrentMonth">
+
           <span class="day-number">{{ d.day }}</span>
 
-          <div *ngIf="d.type" 
-               class="event-dot" 
-               [ngClass]="d.type"
-               title="{{ d.type }}">
-          </div>
+          <span *ngIf="d.type"
+                class="event-dot"
+                [ngClass]="d.type">
+          </span>
 
         </div>
       </div>
-
     </div>
+
   </main>
 </div>
 
-<app-create-event 
-    *ngIf="showCreateEvent" 
-    (close)="closeCreateEvent()"
-    (saved)="onEventSaved()">
+<app-create-event
+  *ngIf="showCreateEvent"
+  (close)="closeCreateEvent()"
+  (saved)="onEventSaved()">
 </app-create-event>
