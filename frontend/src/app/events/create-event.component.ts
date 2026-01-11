@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Output } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { DashboardService } from '../auth/services/dashboard.service';
+import { CalendarEvent } from '../models/event.model';
 
 @Component({
   selector: 'app-create-event',
@@ -9,47 +10,36 @@ import { HttpClient } from '@angular/common/http';
 export class CreateEventComponent {
 
   @Output() close = new EventEmitter<void>();
-  @Output() saved = new EventEmitter<void>();
+  @Output() saved = new EventEmitter<CalendarEvent>();
 
-  event = {
+  errorMessage = '';
+  saving = false;
+
+  event: CalendarEvent = {
     title: '',
     type: 'tarea',
-    date: '',
-    startTime: '',
-    endTime: '',
-    description: '',
-    location: '',
-    meet: '',
-    drive: '',
-    maps: ''
+    date: ''
   };
 
-  constructor(private http: HttpClient) {}
+  constructor(private dashboardService: DashboardService) {}
 
-  save() {
-
-    if (!this.event.title || !this.event.date || !this.event.type) {
-      alert('Faltan datos obligatorios');
+  save(): void {
+    this.errorMessage = '';
+    if (!this.event.title || !this.event.type || !this.event.date) {
+      this.errorMessage = 'Completa titulo, tipo y fecha.';
       return;
     }
 
-    // 👇 SOLO lo que el backend espera
-    const payload = {
-      title: this.event.title,
-      type: this.event.type,
-      date: this.event.date // yyyy-mm-dd (input date ya lo hace bien)
-    };
-
-    this.http.post('http://localhost:3000/api/events/create', payload)
-      .subscribe({
-        next: () => {
-          this.saved.emit();   // 🔥 AVISA AL DASHBOARD
-          this.close.emit();   // cierra modal
-        },
-        error: (err) => {
-          console.error(err);
-          alert('Error al guardar el evento');
-        }
-      });
+    this.saving = true;
+    this.dashboardService.createEvent(this.event).subscribe({
+      next: (created) => {
+        this.saving = false;
+        this.saved.emit({ ...this.event, ...(created || {}) });
+      },
+      error: () => {
+        this.saving = false;
+        this.errorMessage = 'No se pudo guardar el evento.';
+      }
+    });
   }
 }

@@ -14,21 +14,36 @@ router.get("/", async (req, res) => {
       [userId]
     );
 
-    const menuCounts = { examenes: 0, tareas: 0, reuniones: 0 };
+    const menuCounts = { examenes: 0, tareas: 0, reuniones: 0, otros: 0 };
 
     conteo.forEach(c => {
       if (c.tipo === "examen") menuCounts.examenes = c.total;
       if (c.tipo === "tarea") menuCounts.tareas = c.total;
       if (c.tipo === "reunion") menuCounts.reuniones = c.total;
+      if (c.tipo === "otro") menuCounts.otros = c.total;
     });
+
+    const [calendarEvents] = await db.promise().query(
+      `SELECT
+         DATE_FORMAT(fec_inicio, '%Y-%m-%d') AS date,
+         tipo AS type,
+         titulo,
+         descripcion AS description,
+         hora_inicio AS startTime,
+         hora_fin AS endTime,
+         ubicacion AS location
+       FROM evento
+       WHERE codigo_usuario_fk = ?`,
+      [userId]
+    );
 
     res.json({
       menuCounts,
-      notifications: [] // luego lo ampliamos
+      notifications: [],
+      calendarEvents
     });
-
   } catch (err) {
-    console.error("❌ Dashboard error:", err);
+    console.error("Dashboard error:", err);
     res.status(500).json({ msg: "Error dashboard" });
   }
 });

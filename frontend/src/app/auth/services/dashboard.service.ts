@@ -1,41 +1,23 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-
-export interface DashboardData {
-  menuCounts: {
-    examenes: number;
-    tareas: number;
-    reuniones: number;
-  };
-  notifications: Array<{
-    id: string;
-    type: string;
-    title: string;
-    time: string;
-    badge: string;
-  }>;
-  calendarEvents: Array<{
-    date: string;
-    type: string;
-  }>;
-}
+import { CalendarEvent } from '../../models/event.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DashboardService {
-  private apiUrl = 'http://localhost:3000/api/dashboard';
-  private eventsUrl = 'http://localhost:3000/api/events'; // Nueva URL base para eventos
 
-  constructor(private http: HttpClient) { }
+  private dashboardUrl = 'http://localhost:3000/api/dashboard';
+  private eventsUrl = 'http://localhost:3000/api/events';
 
-  getData(): Observable<DashboardData> {
-    return this.http.get<DashboardData>(this.apiUrl);
+  constructor(private http: HttpClient) {}
+
+  getDashboard(): Observable<any> {
+    return this.http.get(this.dashboardUrl);
   }
 
-  // NUEVO MÉTODO
-  createEvent(event: any): Observable<any> {
-    return this.http.post(`${this.eventsUrl}/create`, event);
+  createEvent(event: CalendarEvent): Observable<any> {
+    return this.http.post(this.eventsUrl, event);
   }
 }

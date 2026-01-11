@@ -1,100 +1,108 @@
-$blue: #0d6efd;
-$red: #dc3545;
-$green: #198754;
-$purple: #6f42c1;
-$border: #e0e0e0;
-$text-muted: #adb5bd;
-
-.layout {
-  display: flex;
-  height: 100vh;
-  font-family: 'Segoe UI', sans-serif;
-}
-
-.sidebar {
-  width: 260px;
-  border-right: 1px solid $border;
-  padding: 20px;
-}
-
-.content {
-  flex: 1;
-  padding: 30px;
-}
-
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 25px;
-}
-
-.calendar-wrapper {
+.notifications {
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
-.week-header {
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #111827;
+}
+
+.label {
+  font-weight: 700;
+}
+
+.count {
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+
+.empty {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.card {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 15px;
-  margin-bottom: 10px;
-}
-
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 15px;
-}
-
-.day-card {
-  border: 1px solid $border;
-  border-radius: 8px;
+  grid-template-columns: 36px 1fr auto;
+  gap: 10px;
   padding: 10px;
-  min-height: 100px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  position: relative;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #eef2f7;
+  align-items: center;
 }
 
-.day-number {
+.icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #111827;
+  background: #e5e7eb;
+}
+
+.content .title {
+  margin: 0;
+  font-size: 13px;
   font-weight: 600;
+  color: #111827;
 }
 
-.day-card.faded {
-  background: #fafafa;
-  .day-number {
-    color: $text-muted;
-  }
+.content .time {
+  display: block;
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 4px;
 }
 
-.event-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  align-self: flex-end;
+.badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #111827;
+  background: #e5e7eb;
+  padding: 4px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
-.event-dot.tarea {
-  background-color: $green;
+.card.type-examen .icon,
+.card.type-examen .badge {
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
-.event-dot.examen {
-  background-color: $red;
+.card.type-tarea .icon,
+.card.type-tarea .badge {
+  background: #dcfce7;
+  color: #15803d;
 }
 
-.event-dot.reunion {
-  background-color: $purple;
+.card.type-reunion .icon,
+.card.type-reunion .badge {
+  background: #ede9fe;
+  color: #6d28d9;
 }
 
-.legend .dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  display: inline-block;
-  margin: 0 5px;
+.card.type-compartido .icon,
+.card.type-compartido .badge {
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
-.dot.red { background: $red; }
-.dot.green { background: $green; }
-.dot.purple { background: $purple; }
+.card.type-otro .icon,
+.card.type-otro .badge {
+  background: #e5e7eb;
+  color: #374151;
+}

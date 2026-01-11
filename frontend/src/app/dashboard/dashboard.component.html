@@ -1,38 +1,98 @@
 <div class="layout">
-
   <aside class="sidebar">
-    <h2>ProfeTime</h2>
+    <div class="brand">
+      <img class="brand-logo" src="assets/logo.jpg" alt="ProfeTime" />
+      <span class="brand-text">ProfeTime</span>
+    </div>
 
     <button class="btn-primary" (click)="openCreateEvent()">+ Crear Evento</button>
 
     <nav class="menu">
-      <a class="item active">Calendario</a>
-      <a class="item">Exámenes <span class="badge">{{ menuCounts.examenes }}</span></a>
-      <a class="item">Tareas <span class="badge">{{ menuCounts.tareas }}</span></a>
-      <a class="item">Reuniones <span class="badge">{{ menuCounts.reuniones }}</span></a>
+      <button class="item" type="button" [class.active]="activeSection === 'calendar'" (click)="setSection('calendar')">
+        <span class="item-left">
+          <span class="menu-icon calendar">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="16" rx="3"></rect>
+              <path d="M8 3v4M16 3v4M3 10h18"></path>
+            </svg>
+          </span>
+          <span>Calendario</span>
+        </span>
+      </button>
+      <button class="item" type="button" [class.active]="activeSection === 'examenes'" (click)="setSection('examenes')">
+        <span class="item-left">
+          <span class="menu-icon exam">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"></path>
+              <path d="M14 3v5h5"></path>
+              <path d="M9 13h6M9 17h6"></path>
+            </svg>
+          </span>
+          <span>Examenes</span>
+        </span>
+        <span class="badge">{{ menuCounts.examenes }}</span>
+      </button>
+      <button class="item" type="button" [class.active]="activeSection === 'tareas'" (click)="setSection('tareas')">
+        <span class="item-left">
+          <span class="menu-icon task">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="4" y="3" width="16" height="18" rx="3"></rect>
+              <path d="M8 7h8M8 11h8M8 15h5"></path>
+            </svg>
+          </span>
+          <span>Tareas</span>
+        </span>
+        <span class="badge">{{ menuCounts.tareas }}</span>
+      </button>
+      <button class="item" type="button" [class.active]="activeSection === 'reuniones'" (click)="setSection('reuniones')">
+        <span class="item-left">
+          <span class="menu-icon meeting">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="6" width="14" height="12" rx="2"></rect>
+              <path d="M17 10l4-2v8l-4-2"></path>
+            </svg>
+          </span>
+          <span>Reuniones</span>
+        </span>
+        <span class="badge">{{ menuCounts.reuniones }}</span>
+      </button>
+      <button class="item" type="button" [class.active]="activeSection === 'compartidos'" (click)="setSection('compartidos')">
+        <span class="item-left">
+          <span class="menu-icon shared">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="8" cy="8" r="3"></circle>
+              <circle cx="16" cy="10" r="3"></circle>
+              <path d="M2 20c0-3 3-5 6-5M12 20c0-3 3-5 6-5"></path>
+            </svg>
+          </span>
+          <span>Compartidos</span>
+        </span>
+      </button>
     </nav>
+
+    <app-notifications [data]="notifications"></app-notifications>
   </aside>
 
   <main class="content">
-
     <header class="topbar">
       <div class="title-area">
-        <h1>{{ monthYearDisplay }}</h1>
-        <div class="controls">
-          <button (click)="changeMonth(-1)">&lt;</button>
-          <button (click)="goToToday()">Hoy</button>
-          <button (click)="changeMonth(1)">&gt;</button>
+        <h1>{{ activeSection === 'calendar' ? (monthYearDisplay | titlecase) : sectionTitle }}</h1>
+        <div class="controls" *ngIf="activeSection === 'calendar'">
+          <button class="icon-btn" (click)="changeMonth(-1)">&lsaquo;</button>
+          <button class="ghost-btn" (click)="goToToday()">Hoy</button>
+          <button class="icon-btn" (click)="changeMonth(1)">&rsaquo;</button>
         </div>
       </div>
 
-      <div class="legend">
-        <span class="dot red"></span> Exámenes
+      <div class="legend" *ngIf="activeSection === 'calendar'">
+        <span class="dot red"></span> Examenes
         <span class="dot green"></span> Tareas
         <span class="dot purple"></span> Reuniones
+        <span class="dot blue"></span> Otros
       </div>
     </header>
 
-    <div class="calendar-wrapper">
+    <div class="calendar" *ngIf="activeSection === 'calendar'">
       <div class="week-header">
         <div *ngFor="let d of weekDays" class="day-name">{{ d }}</div>
       </div>
@@ -40,24 +100,46 @@
       <div class="calendar-grid">
         <div *ngFor="let d of daysInMonth"
              class="day-card"
-             [class.faded]="!d.isCurrentMonth">
-
+             [class.faded]="!d.isCurrentMonth"
+             [class.selected]="selectedDate && d.date === selectedDate"
+             (click)="onDaySelect(d)">
           <span class="day-number">{{ d.day }}</span>
 
-          <span *ngIf="d.type"
-                class="event-dot"
-                [ngClass]="d.type">
-          </span>
-
+          <span *ngIf="d.type" class="event-dot" [ngClass]="d.type"></span>
+          <div *ngIf="d.type" class="event-pill" [ngClass]="d.type">
+            {{ d.title || typeLabel(d.type) }}
+          </div>
         </div>
       </div>
     </div>
 
+    <section class="list-view" *ngIf="activeSection !== 'calendar'">
+      <div class="list-empty" *ngIf="activeSection === 'compartidos'">No hay eventos compartidos.</div>
+      <div class="list-empty" *ngIf="activeSection !== 'compartidos' && filteredEvents.length === 0">
+        No hay eventos.
+      </div>
+      <div class="list-card" *ngFor="let event of filteredEvents">
+        <div class="list-left">
+          <span class="list-icon" [ngClass]="event.type">{{ typeLabel(event.type) | slice:0:1 }}</span>
+          <div class="list-content">
+            <div class="list-title">{{ event.title || typeLabel(event.type) }}</div>
+            <div class="list-meta">
+              <span>{{ formatDateLabel(event.date) }}</span>
+              <span *ngIf="formatTimeRange(event.startTime, event.endTime)">
+                • {{ formatTimeRange(event.startTime, event.endTime) }}
+              </span>
+            </div>
+            <div class="list-meta" *ngIf="event.location">{{ event.location }}</div>
+            <div class="list-desc" *ngIf="event.description">{{ event.description }}</div>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 </div>
 
 <app-create-event
   *ngIf="showCreateEvent"
   (close)="closeCreateEvent()"
-  (saved)="onEventSaved()">
+  (saved)="onEventSaved($event)">
 </app-create-event>

@@ -75,7 +75,8 @@
 
         <!-- FOOTER -->
         <footer class="modal-footer">
-            <button class="primary" (click)="save()">Guardar evento</button>
+            <span class="error" *ngIf="errorMessage">{{ errorMessage }}</span>
+            <button class="primary" (click)="save()" [disabled]="saving">Guardar evento</button>
             <button class="cancel" (click)="close.emit()">Cancelar</button>
         </footer>
 

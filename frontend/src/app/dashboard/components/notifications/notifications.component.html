@@ -1,14 +1,21 @@
-<div class="notifications">
-  <h4>Notificaciones</h4>
+<section class="notifications">
+  <div class="header">
+    <span class="label">NOTIFICACIONES</span>
+    <span class="count">{{ data.length || 0 }}</span>
+  </div>
 
   <div *ngIf="!data || data.length === 0" class="empty">
     No hay notificaciones
   </div>
 
-  <div *ngFor="let n of data" class="notification-item">
-    <span class="type">{{ n.type }}</span>
-    <span class="title">{{ n.title }}</span>
-    <span class="time">{{ n.time }}</span>
-    <span class="badge">{{ n.badge }}</span>
+  <div *ngFor="let item of data" class="card" [ngClass]="getStyleClass(item.type)">
+    <div class="icon">{{ getIcon(item.type) }}</div>
+
+    <div class="content">
+      <p class="title">{{ item.title }}</p>
+      <small class="time">{{ item.time }}</small>
+    </div>
+
+    <div class="badge" *ngIf="item.badge">{{ item.badge }}</div>
   </div>
-</div>
+</section>

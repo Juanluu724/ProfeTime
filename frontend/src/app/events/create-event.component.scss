@@ -85,6 +85,7 @@ hr {
     gap: 12px;
     padding: 18px 24px;
     border-top: 1px solid #e5e7eb;
+    align-items: center;
 }
 
 .primary {
@@ -94,6 +95,17 @@ hr {
     padding: 10px 18px;
     border-radius: 8px;
     cursor: pointer;
+}
+
+.primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.error {
+    margin-right: auto;
+    font-size: 12px;
+    color: #b91c1c;
 }
 
 .secondary {
