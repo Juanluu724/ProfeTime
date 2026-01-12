@@ -19,6 +19,7 @@ export class DashboardComponent implements OnInit {
   selectedDate: string | null = null;
 
   showCreateEvent = false;
+  eventToEdit?: CalendarEvent; // <- Para editar
 
   menuCounts = {
     examenes: 0,
@@ -40,7 +41,8 @@ export class DashboardComponent implements OnInit {
       this.notifications = data.notifications || [];
       this.events = (data.calendarEvents || []).map((event: any) => ({
         ...event,
-        title: event.title ?? event.titulo ?? null,
+        codigo_evento: event.codigo_evento,
+         title: event.title ?? event.titulo ?? null,
         description: event.description ?? event.descripcion ?? null,
         startTime: event.startTime ?? event.hora_inicio ?? null,
         endTime: event.endTime ?? event.hora_fin ?? null,
@@ -109,35 +111,62 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  openCreateEvent(): void {
-    this.showCreateEvent = true;
-  }
 
   closeCreateEvent(): void {
     this.showCreateEvent = false;
+    this.eventToEdit = undefined;
   }
 
   onEventSaved(event?: CalendarEvent): void {
     this.showCreateEvent = false;
     if (event?.date) {
-      this.events = [
-        ...this.events,
-        {
-          date: this.normalizeDate(event.date),
-          type: event.type || 'otro',
-          title: event.title,
-          description: event.description,
-          startTime: event.startTime,
-          endTime: event.endTime,
-          location: event.location
-        }
-      ];
-      this.incrementMenuCount(event.type || 'otro');
+      const exists = this.events.find(e => e.codigo_evento === event.codigo_evento);
+      if (exists) {
+     
+        this.events = this.events.map(e => e.codigo_evento === event.codigo_evento ? event : e);
+      } else {
+   
+        this.events = [...this.events, event];
+        this.incrementMenuCount(event.type || 'otro');
+      }
       this.generateCalendar();
     }
     this.loadDashboard();
   }
 
+  editarEvento(event: CalendarEvent) {
+  console.log('Editando evento:', event); 
+  this.eventToEdit = event;
+  this.showCreateEvent = true;
+}
+
+openCreateEvent() {
+  this.eventToEdit = undefined; 
+  this.showCreateEvent = true;
+}
+  
+  
+eliminarEvento(event: CalendarEvent) {
+  console.log('Intentando borrar evento:', event);
+  if (!event.codigo_evento) {
+    alert("Error: El evento no tiene un código válido.");
+    return;
+  }
+  
+  if (confirm(`¿Seguro que quieres eliminar "${event.title}"?`)) {
+    this.dashboardService.deleteEvent(event.codigo_evento).subscribe({
+      next: () => {
+       
+        this.events = this.events.filter(e => e.codigo_evento !== event.codigo_evento);
+        this.loadDashboard(); // Refrescamos contadores
+      },
+      error: (err) => {
+        console.error(err);
+        alert('Error al eliminar en el servidor');
+      }
+    });
+  }
+}
   setSection(section: 'calendar' | 'examenes' | 'tareas' | 'reuniones' | 'compartidos'): void {
     this.activeSection = section;
     this.selectedDate = null;
@@ -164,16 +193,11 @@ export class DashboardComponent implements OnInit {
 
   get sectionTitle(): string {
     switch (this.activeSection) {
-      case 'examenes':
-        return 'Examenes';
-      case 'tareas':
-        return 'Tareas';
-      case 'reuniones':
-        return 'Reuniones';
-      case 'compartidos':
-        return 'Compartidos';
-      default:
-        return 'Calendario';
+      case 'examenes': return 'Examenes';
+      case 'tareas': return 'Tareas';
+      case 'reuniones': return 'Reuniones';
+      case 'compartidos': return 'Compartidos';
+      default: return 'Calendario';
     }
   }
 
@@ -223,9 +247,7 @@ export class DashboardComponent implements OnInit {
 
   private normalizeDate(value: string): string {
     if (!value) return value;
-    if (value.includes('T')) {
-      return value.slice(0, 10);
-    }
+    if (value.includes('T')) return value.slice(0, 10);
     return value;
   }
 

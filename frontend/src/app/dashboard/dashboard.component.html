@@ -119,27 +119,35 @@
         No hay eventos.
       </div>
       <div class="list-card" *ngFor="let event of filteredEvents">
-        <div class="list-left">
-          <span class="list-icon" [ngClass]="event.type">{{ typeLabel(event.type) | slice:0:1 }}</span>
-          <div class="list-content">
-            <div class="list-title">{{ event.title || typeLabel(event.type) }}</div>
-            <div class="list-meta">
-              <span>{{ formatDateLabel(event.date) }}</span>
-              <span *ngIf="formatTimeRange(event.startTime, event.endTime)">
-                • {{ formatTimeRange(event.startTime, event.endTime) }}
-              </span>
-            </div>
-            <div class="list-meta" *ngIf="event.location">{{ event.location }}</div>
-            <div class="list-desc" *ngIf="event.description">{{ event.description }}</div>
-          </div>
-        </div>
+  <div class="list-left">
+    <span class="list-icon" [ngClass]="event.type">{{ typeLabel(event.type) | slice:0:1 }}</span>
+    <div class="list-content">
+      <div class="list-title">{{ event.title || typeLabel(event.type) }}</div>
+      <div class="list-meta">
+        <span>{{ formatDateLabel(event.date) }}</span>
+        <span *ngIf="formatTimeRange(event.startTime, event.endTime)">
+          • {{ formatTimeRange(event.startTime, event.endTime) }}
+        </span>
       </div>
+      <div class="list-meta" *ngIf="event.location">{{ event.location }}</div>
+      <div class="list-desc" *ngIf="event.description">{{ event.description }}</div>
+    </div>
+  </div>
+
+  
+  <div class="list-actions">
+    <button class="btn-edit" (click)="editarEvento(event)">Editar</button>
+    <button class="btn-delete" (click)="eliminarEvento(event)">Borrar</button>
+  </div>
+</div>
     </section>
   </main>
 </div>
 
+
 <app-create-event
   *ngIf="showCreateEvent"
+  [eventToEdit]="eventToEdit" 
   (close)="closeCreateEvent()"
   (saved)="onEventSaved($event)">
 </app-create-event>

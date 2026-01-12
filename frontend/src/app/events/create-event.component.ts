@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, Input, OnInit } from '@angular/core'; // Añadido Input y OnInit
 import { DashboardService } from '../auth/services/dashboard.service';
 import { CalendarEvent } from '../models/event.model';
 
@@ -7,8 +7,9 @@ import { CalendarEvent } from '../models/event.model';
   templateUrl: './create-event.component.html',
   styleUrls: ['./create-event.component.scss']
 })
-export class CreateEventComponent {
+export class CreateEventComponent implements OnInit {
 
+  @Input() eventToEdit?: CalendarEvent; 
   @Output() close = new EventEmitter<void>();
   @Output() saved = new EventEmitter<CalendarEvent>();
 
@@ -23,23 +24,48 @@ export class CreateEventComponent {
 
   constructor(private dashboardService: DashboardService) {}
 
-  save(): void {
-    this.errorMessage = '';
-    if (!this.event.title || !this.event.type || !this.event.date) {
-      this.errorMessage = 'Completa titulo, tipo y fecha.';
-      return;
+  ngOnInit(): void {
+ 
+    if (this.eventToEdit) {
+      this.event = { ...this.eventToEdit };
     }
+  }
 
-    this.saving = true;
-    this.dashboardService.createEvent(this.event).subscribe({
-      next: (created) => {
+  save(): void {
+  this.errorMessage = '';
+  if (!this.event.title || !this.event.date) {
+    this.errorMessage = 'El título y la fecha son obligatorios.';
+    return;
+  }
+
+  this.saving = true;
+
+  if (this.event.codigo_evento) {
+    this.dashboardService.updateEvent(this.event).subscribe({
+      next: () => {
         this.saving = false;
-        this.saved.emit({ ...this.event, ...(created || {}) });
+        this.saved.emit(this.event);
+        this.close.emit();
       },
-      error: () => {
+      error: (err) => {
         this.saving = false;
-        this.errorMessage = 'No se pudo guardar el evento.';
+        this.errorMessage = 'Error al actualizar el evento.';
+        console.error(err);
+      }
+    });
+  } else {
+    this.dashboardService.createEvent(this.event).subscribe({
+      next: (res) => {
+        this.saving = false;
+        this.saved.emit(res);
+        this.close.emit();
+      },
+      error: (err) => {
+        this.saving = false;
+        this.errorMessage = 'Error al crear el evento.';
+        console.error(err);
       }
     });
   }
+}
 }

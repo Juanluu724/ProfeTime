@@ -4,7 +4,11 @@ const db = require("../config/db");
 
 router.get("/", async (req, res) => {
   try {
-    const userId = "U001";
+    const userId = req.headers['x-user-id']; 
+
+    if (!userId) {
+      return res.status(401).json({ msg: "No autorizado. Falta ID de usuario." });
+    }
 
     const [conteo] = await db.promise().query(
       `SELECT tipo, COUNT(*) total
@@ -15,7 +19,6 @@ router.get("/", async (req, res) => {
     );
 
     const menuCounts = { examenes: 0, tareas: 0, reuniones: 0, otros: 0 };
-
     conteo.forEach(c => {
       if (c.tipo === "examen") menuCounts.examenes = c.total;
       if (c.tipo === "tarea") menuCounts.tareas = c.total;
@@ -25,9 +28,10 @@ router.get("/", async (req, res) => {
 
     const [calendarEvents] = await db.promise().query(
       `SELECT
+         codigo_evento,
          DATE_FORMAT(fec_inicio, '%Y-%m-%d') AS date,
          tipo AS type,
-         titulo,
+         titulo AS title,
          descripcion AS description,
          hora_inicio AS startTime,
          hora_fin AS endTime,
@@ -37,14 +41,11 @@ router.get("/", async (req, res) => {
       [userId]
     );
 
-    res.json({
-      menuCounts,
-      notifications: [],
-      calendarEvents
-    });
+    res.json({ menuCounts, calendarEvents });
+
   } catch (err) {
-    console.error("Dashboard error:", err);
-    res.status(500).json({ msg: "Error dashboard" });
+    console.error(err);
+    res.status(500).json({ msg: "Error cargando dashboard" });
   }
 });
 
