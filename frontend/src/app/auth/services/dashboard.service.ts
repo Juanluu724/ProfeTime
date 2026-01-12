@@ -14,13 +14,23 @@ export class DashboardService {
   constructor(private http: HttpClient) {}
 
   private getHeaders() {
-    const userId = localStorage.getItem('userId') || ''; 
-    return {
-      headers: new HttpHeaders({
-        'x-user-id': userId 
-      })
-    };
+  let userId = '';
+
+  const userString = localStorage.getItem('user'); 
+
+  if (userString) {
+    try {
+      const userObject = JSON.parse(userString);
+      userId = userObject.codigo_usuario; // <--- AQUÍ ESTÁ LA CLAVE
+    } catch (e) {
+      console.error("Error al leer el usuario del almacenamiento", e);
+    }
   }
+
+  const headers = userId ? new HttpHeaders({ 'x-user-id': userId }) : new HttpHeaders();
+
+  return { headers: headers };
+}
 
   getDashboard(): Observable<any> {
     return this.http.get(this.dashboardUrl, this.getHeaders());

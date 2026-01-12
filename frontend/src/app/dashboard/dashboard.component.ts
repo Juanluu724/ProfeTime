@@ -15,6 +15,7 @@ export class DashboardComponent implements OnInit {
 
   daysInMonth: any[] = [];
   events: CalendarEvent[] = [];
+  
   notifications: any[] = [];
   selectedDate: string | null = null;
 
@@ -36,21 +37,24 @@ export class DashboardComponent implements OnInit {
   }
 
   loadDashboard(): void {
-    this.dashboardService.getDashboard().subscribe((data: any) => {
-      this.menuCounts = data.menuCounts || this.menuCounts;
-      this.notifications = data.notifications || [];
-      this.events = (data.calendarEvents || []).map((event: any) => ({
-        ...event,
-        codigo_evento: event.codigo_evento,
-         title: event.title ?? event.titulo ?? null,
-        description: event.description ?? event.descripcion ?? null,
-        startTime: event.startTime ?? event.hora_inicio ?? null,
-        endTime: event.endTime ?? event.hora_fin ?? null,
-        location: event.location ?? event.ubicacion ?? null
-      }));
-      this.generateCalendar();
-    });
-  }
+  this.dashboardService.getDashboard().subscribe((data: any) => {
+    
+    this.menuCounts = data.menuCounts || { examenes: 0, tareas: 0, reuniones: 0, otros: 0 };
+    
+    const rawEvents = data.calendarEvents || [];
+    
+    this.events = rawEvents.map((event: any) => ({
+      ...event,
+      date: event.date || event.fec_inicio, 
+      title: event.title || event.titulo,
+      type: event.type || event.tipo || 'otro'
+    }));
+
+    this.generateCalendar(); 
+  }, (error) => {
+    console.error("⚠️ Error cargando el dashboard:", error);
+  });
+}
 
   generateCalendar(): void {
     this.daysInMonth = [];
