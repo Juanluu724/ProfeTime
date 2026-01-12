@@ -1,6 +1,6 @@
 export interface CalendarEvent {
   id?: number;
-  codigo_evento?: string; 
+  codigo_evento?: string;
   title: string;
   type: 'examen' | 'tarea' | 'reunion' | 'otro';
   date: string;

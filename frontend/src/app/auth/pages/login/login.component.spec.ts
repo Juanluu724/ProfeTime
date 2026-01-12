@@ -17,7 +17,7 @@ export class LoginComponent {
   constructor(
     private http: HttpClient,
     private router: Router
-  ) {}
+  ) { }
 
   onLogin() {
     this.mensaje = '';

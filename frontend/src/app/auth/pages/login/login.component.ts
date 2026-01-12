@@ -18,7 +18,7 @@ export class LoginComponent {
   constructor(
     private authService: AuthService,
     private router: Router
-  ) {}
+  ) { }
 
   onLogin() {
     this.mensaje = '';

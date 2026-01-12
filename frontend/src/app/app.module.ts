@@ -26,4 +26,4 @@ import { NotificationsComponent } from './dashboard/components/notifications/not
   ],
   bootstrap: [AppComponent]
 })
-export class AppModule {}
+export class AppModule { }

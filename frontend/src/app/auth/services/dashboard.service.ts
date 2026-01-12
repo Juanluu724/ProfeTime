@@ -11,26 +11,26 @@ export class DashboardService {
   private dashboardUrl = 'http://localhost:3000/api/dashboard';
   private eventsUrl = 'http://localhost:3000/api/events';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   private getHeaders() {
-  let userId = '';
+    let userId = '';
 
-  const userString = localStorage.getItem('user'); 
+    const userString = localStorage.getItem('user');
 
-  if (userString) {
-    try {
-      const userObject = JSON.parse(userString);
-      userId = userObject.codigo_usuario; // <--- AQUÍ ESTÁ LA CLAVE
-    } catch (e) {
-      console.error("Error al leer el usuario del almacenamiento", e);
+    if (userString) {
+      try {
+        const userObject = JSON.parse(userString);
+        userId = userObject.codigo_usuario; // <--- AQUÍ ESTÁ LA CLAVE
+      } catch (e) {
+        console.error("Error al leer el usuario del almacenamiento", e);
+      }
     }
+
+    const headers = userId ? new HttpHeaders({ 'x-user-id': userId }) : new HttpHeaders();
+
+    return { headers: headers };
   }
-
-  const headers = userId ? new HttpHeaders({ 'x-user-id': userId }) : new HttpHeaders();
-
-  return { headers: headers };
-}
 
   getDashboard(): Observable<any> {
     return this.http.get(this.dashboardUrl, this.getHeaders());

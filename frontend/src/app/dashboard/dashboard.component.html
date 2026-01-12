@@ -44,7 +44,8 @@
         </span>
         <span class="badge">{{ menuCounts.tareas }}</span>
       </button>
-      <button class="item" type="button" [class.active]="activeSection === 'reuniones'" (click)="setSection('reuniones')">
+      <button class="item" type="button" [class.active]="activeSection === 'reuniones'"
+        (click)="setSection('reuniones')">
         <span class="item-left">
           <span class="menu-icon meeting">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -56,7 +57,8 @@
         </span>
         <span class="badge">{{ menuCounts.reuniones }}</span>
       </button>
-      <button class="item" type="button" [class.active]="activeSection === 'compartidos'" (click)="setSection('compartidos')">
+      <button class="item" type="button" [class.active]="activeSection === 'compartidos'"
+        (click)="setSection('compartidos')">
         <span class="item-left">
           <span class="menu-icon shared">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -98,11 +100,8 @@
       </div>
 
       <div class="calendar-grid">
-        <div *ngFor="let d of daysInMonth"
-             class="day-card"
-             [class.faded]="!d.isCurrentMonth"
-             [class.selected]="selectedDate && d.date === selectedDate"
-             (click)="onDaySelect(d)">
+        <div *ngFor="let d of daysInMonth" class="day-card" [class.faded]="!d.isCurrentMonth"
+          [class.selected]="selectedDate && d.date === selectedDate" (click)="onDaySelect(d)">
           <span class="day-number">{{ d.day }}</span>
 
           <span *ngIf="d.type" class="event-dot" [ngClass]="d.type"></span>
@@ -119,35 +118,32 @@
         No hay eventos.
       </div>
       <div class="list-card" *ngFor="let event of filteredEvents">
-  <div class="list-left">
-    <span class="list-icon" [ngClass]="event.type">{{ typeLabel(event.type) | slice:0:1 }}</span>
-    <div class="list-content">
-      <div class="list-title">{{ event.title || typeLabel(event.type) }}</div>
-      <div class="list-meta">
-        <span>{{ formatDateLabel(event.date) }}</span>
-        <span *ngIf="formatTimeRange(event.startTime, event.endTime)">
-          • {{ formatTimeRange(event.startTime, event.endTime) }}
-        </span>
-      </div>
-      <div class="list-meta" *ngIf="event.location">{{ event.location }}</div>
-      <div class="list-desc" *ngIf="event.description">{{ event.description }}</div>
-    </div>
-  </div>
+        <div class="list-left">
+          <span class="list-icon" [ngClass]="event.type">{{ typeLabel(event.type) | slice:0:1 }}</span>
+          <div class="list-content">
+            <div class="list-title">{{ event.title || typeLabel(event.type) }}</div>
+            <div class="list-meta">
+              <span>{{ formatDateLabel(event.date) }}</span>
+              <span *ngIf="formatTimeRange(event.startTime, event.endTime)">
+                • {{ formatTimeRange(event.startTime, event.endTime) }}
+              </span>
+            </div>
+            <div class="list-meta" *ngIf="event.location">{{ event.location }}</div>
+            <div class="list-desc" *ngIf="event.description">{{ event.description }}</div>
+          </div>
+        </div>
 
-  
-  <div class="list-actions">
-    <button class="btn-edit" (click)="editarEvento(event)">Editar</button>
-    <button class="btn-delete" (click)="eliminarEvento(event)">Borrar</button>
-  </div>
-</div>
+
+        <div class="list-actions">
+          <button class="btn-edit" (click)="editarEvento(event)">Editar</button>
+          <button class="btn-delete" (click)="eliminarEvento(event)">Borrar</button>
+        </div>
+      </div>
     </section>
   </main>
 </div>
 
 
-<app-create-event
-  *ngIf="showCreateEvent"
-  [eventToEdit]="eventToEdit" 
-  (close)="closeCreateEvent()"
+<app-create-event *ngIf="showCreateEvent" [eventToEdit]="eventToEdit" (close)="closeCreateEvent()"
   (saved)="onEventSaved($event)">
 </app-create-event>

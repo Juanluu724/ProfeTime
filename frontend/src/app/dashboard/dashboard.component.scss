@@ -194,10 +194,21 @@
   margin-right: 6px;
 }
 
-.dot.red { background: #ff4d4f; }
-.dot.green { background: #22c55e; }
-.dot.purple { background: #8b5cf6; }
-.dot.blue { background: #3b82f6; }
+.dot.red {
+  background: #ff4d4f;
+}
+
+.dot.green {
+  background: #22c55e;
+}
+
+.dot.purple {
+  background: #8b5cf6;
+}
+
+.dot.blue {
+  background: #3b82f6;
+}
 
 .calendar {
   background: #ffffff;
@@ -346,10 +357,21 @@
   align-self: flex-end;
 }
 
-.event-dot.examen { background: #ff4d4f; }
-.event-dot.tarea { background: #22c55e; }
-.event-dot.reunion { background: #8b5cf6; }
-.event-dot.otro { background: #3b82f6; }
+.event-dot.examen {
+  background: #ff4d4f;
+}
+
+.event-dot.tarea {
+  background: #22c55e;
+}
+
+.event-dot.reunion {
+  background: #8b5cf6;
+}
+
+.event-dot.otro {
+  background: #3b82f6;
+}
 
 .event-pill {
   font-size: 11px;

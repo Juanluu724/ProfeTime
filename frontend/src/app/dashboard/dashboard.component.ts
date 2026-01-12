@@ -15,7 +15,7 @@ export class DashboardComponent implements OnInit {
 
   daysInMonth: any[] = [];
   events: CalendarEvent[] = [];
-  
+
   notifications: any[] = [];
   selectedDate: string | null = null;
 
@@ -29,7 +29,7 @@ export class DashboardComponent implements OnInit {
     otros: 0
   };
 
-  constructor(private dashboardService: DashboardService) {}
+  constructor(private dashboardService: DashboardService) { }
 
   ngOnInit(): void {
     this.updateMonthTitle();
@@ -37,24 +37,24 @@ export class DashboardComponent implements OnInit {
   }
 
   loadDashboard(): void {
-  this.dashboardService.getDashboard().subscribe((data: any) => {
-    
-    this.menuCounts = data.menuCounts || { examenes: 0, tareas: 0, reuniones: 0, otros: 0 };
-    
-    const rawEvents = data.calendarEvents || [];
-    
-    this.events = rawEvents.map((event: any) => ({
-      ...event,
-      date: event.date || event.fec_inicio, 
-      title: event.title || event.titulo,
-      type: event.type || event.tipo || 'otro'
-    }));
+    this.dashboardService.getDashboard().subscribe((data: any) => {
 
-    this.generateCalendar(); 
-  }, (error) => {
-    console.error("⚠️ Error cargando el dashboard:", error);
-  });
-}
+      this.menuCounts = data.menuCounts || { examenes: 0, tareas: 0, reuniones: 0, otros: 0 };
+
+      const rawEvents = data.calendarEvents || [];
+
+      this.events = rawEvents.map((event: any) => ({
+        ...event,
+        date: event.date || event.fec_inicio,
+        title: event.title || event.titulo,
+        type: event.type || event.tipo || 'otro'
+      }));
+
+      this.generateCalendar();
+    }, (error) => {
+      console.error("⚠️ Error cargando el dashboard:", error);
+    });
+  }
 
   generateCalendar(): void {
     this.daysInMonth = [];
@@ -126,10 +126,10 @@ export class DashboardComponent implements OnInit {
     if (event?.date) {
       const exists = this.events.find(e => e.codigo_evento === event.codigo_evento);
       if (exists) {
-     
+
         this.events = this.events.map(e => e.codigo_evento === event.codigo_evento ? event : e);
       } else {
-   
+
         this.events = [...this.events, event];
         this.incrementMenuCount(event.type || 'otro');
       }
@@ -139,38 +139,38 @@ export class DashboardComponent implements OnInit {
   }
 
   editarEvento(event: CalendarEvent) {
-  console.log('Editando evento:', event); 
-  this.eventToEdit = event;
-  this.showCreateEvent = true;
-}
+    console.log('Editando evento:', event);
+    this.eventToEdit = event;
+    this.showCreateEvent = true;
+  }
 
-openCreateEvent() {
-  this.eventToEdit = undefined; 
-  this.showCreateEvent = true;
-}
-  
-  
-eliminarEvento(event: CalendarEvent) {
-  console.log('Intentando borrar evento:', event);
-  if (!event.codigo_evento) {
-    alert("Error: El evento no tiene un código válido.");
-    return;
+  openCreateEvent() {
+    this.eventToEdit = undefined;
+    this.showCreateEvent = true;
   }
-  
-  if (confirm(`¿Seguro que quieres eliminar "${event.title}"?`)) {
-    this.dashboardService.deleteEvent(event.codigo_evento).subscribe({
-      next: () => {
-       
-        this.events = this.events.filter(e => e.codigo_evento !== event.codigo_evento);
-        this.loadDashboard(); // Refrescamos contadores
-      },
-      error: (err) => {
-        console.error(err);
-        alert('Error al eliminar en el servidor');
-      }
-    });
+
+
+  eliminarEvento(event: CalendarEvent) {
+    console.log('Intentando borrar evento:', event);
+    if (!event.codigo_evento) {
+      alert("Error: El evento no tiene un código válido.");
+      return;
+    }
+
+    if (confirm(`¿Seguro que quieres eliminar "${event.title}"?`)) {
+      this.dashboardService.deleteEvent(event.codigo_evento).subscribe({
+        next: () => {
+
+          this.events = this.events.filter(e => e.codigo_evento !== event.codigo_evento);
+          this.loadDashboard(); // Refrescamos contadores
+        },
+        error: (err) => {
+          console.error(err);
+          alert('Error al eliminar en el servidor');
+        }
+      });
+    }
   }
-}
   setSection(section: 'calendar' | 'examenes' | 'tareas' | 'reuniones' | 'compartidos'): void {
     this.activeSection = section;
     this.selectedDate = null;
