@@ -1,18 +1,19 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { DashboardService } from '../auth/services/dashboard.service';
 import { CalendarEvent } from '../models/event.model';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss']
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   currentDate = new Date();
   monthYearDisplay = '';
   weekDays = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
   activeSection: 'calendar' | 'examenes' | 'tareas' | 'reuniones' | 'compartidos' = 'calendar';
-
+  socketSubscription?: Subscription;
   daysInMonth: any[] = [];
   events: CalendarEvent[] = [];
 
@@ -34,6 +35,26 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     this.updateMonthTitle();
     this.loadDashboard();
+
+    // 3. Suscripción corregida
+    this.socketSubscription = this.dashboardService.onNewEvent$.subscribe((newEvent: any) => {
+        // Usamos 'any' arriba o simplemente accedemos a .date si estamos seguros
+        this.events.push({
+            ...newEvent,
+            date: newEvent.date // <--- Eliminamos '|| newEvent.fec_inicio' que causaba el error
+        });
+        
+        // Regenerar calendario y contadores visualmente
+        if (newEvent.type) {
+            this.incrementMenuCount(newEvent.type);
+        }
+        this.generateCalendar();
+    });
+  }
+  ngOnDestroy(): void {
+      if (this.socketSubscription) {
+          this.socketSubscription.unsubscribe();
+      }
   }
 
   loadDashboard(): void {

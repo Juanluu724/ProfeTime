@@ -13,4 +13,6 @@ export interface CalendarEvent {
   meet?: string;
   drive?: string;
   maps?: string;
+  sharedWithEmail?: string;
+  ownership?: 'propio' | 'compartido'; // Para saber si es mío o me lo enviaron
 }
