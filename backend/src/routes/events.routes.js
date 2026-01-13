@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const db = require("../config/db");
 
-// GET: Obtener eventos propios Y compartidos
 // GET: Eventos propios y compartidos con datos del remitente
 router.get("/", async (req, res) => {
   try {
@@ -105,15 +104,54 @@ router.put("/:codigo_evento", async (req, res) => {
     res.status(500).json({ msg: "Error en el servidor al actualizar" });
   }
 });
-
+// DELETE: Borrar evento y notificar en tiempo real
 router.delete("/:codigo_evento", async (req, res) => {
   try {
     const { codigo_evento } = req.params;
-    const [result] = await db.promise().query("DELETE FROM evento WHERE codigo_evento = ?", [codigo_evento]);
+    const userId = req.headers['x-user-id']; // Quien está borrando
+    const io = req.app.get('io');
+
+    // 1. Antes de borrar, averiguamos quién más está involucrado para avisarle
+    // Buscamos si el evento tiene participantes
+    const [participants] = await db.promise().query(
+        "SELECT codigo_usuario FROM evento_participante WHERE codigo_evento = ?", 
+        [codigo_evento]
+    );
     
-    if (result.affectedRows === 0) return res.status(404).json({ msg: "No encontrado" });
-    res.json({ msg: "Eliminado" });
+    // Buscamos quién es el dueño
+    const [eventData] = await db.promise().query(
+        "SELECT codigo_usuario_fk FROM evento WHERE codigo_evento = ?",
+        [codigo_evento]
+    );
+
+    if (eventData.length === 0) return res.status(404).json({ msg: "No encontrado" });
+
+    const ownerId = eventData[0].codigo_usuario_fk;
+
+    // 2. Ejecutamos el borrado (La base de datos limpiará los participantes por CASCADE)
+    // Permitimos borrar si eres el dueño O si eres participante (según tu petición)
+    const [result] = await db.promise().query(
+        `DELETE FROM evento 
+         WHERE codigo_evento = ? AND (codigo_usuario_fk = ? OR codigo_evento IN (SELECT codigo_evento FROM evento_participante WHERE codigo_usuario = ?))`, 
+        [codigo_evento, userId, userId]
+    );
+    
+    if (result.affectedRows === 0) return res.status(404).json({ msg: "No se pudo borrar o no tienes permiso" });
+
+    // 3. NOTIFICACIÓN REAL-TIME
+    // Si borró el dueño -> Avisar a los participantes
+    if (userId === ownerId) {
+        participants.forEach(p => {
+            io.to(p.codigo_usuario).emit("evento_eliminado", codigo_evento);
+        });
+    } else {
+        // Si borró un participante -> Avisar al dueño (y a otros participantes si hubiera)
+        io.to(ownerId).emit("evento_eliminado", codigo_evento);
+    }
+
+    res.json({ msg: "Eliminado correctamente" });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ msg: "Error al eliminar" });
   }
 });

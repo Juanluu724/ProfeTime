@@ -121,15 +121,23 @@
         <div class="list-left">
           <span class="list-icon" [ngClass]="event.type">{{ typeLabel(event.type) | slice:0:1 }}</span>
           <div class="list-content">
-            <div class="list-title">{{ event.title || typeLabel(event.type) }}</div>
-            <div class="list-meta">
-              <span>{{ formatDateLabel(event.date) }}</span>
-              <span *ngIf="formatTimeRange(event.startTime, event.endTime)">
-                • {{ formatTimeRange(event.startTime, event.endTime) }}
+            <div class="list-title">
+              {{ event.title || typeLabel(event.type) }}
+              <span *ngIf="event.ownership === 'compartido'"
+                style="font-size: 10px; background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">
+                Compartido
               </span>
             </div>
+
+            <div class="list-meta">
+              <span>{{ formatDateLabel(event.date) }}</span>
+            </div>
+
+            <div class="list-meta" *ngIf="event.senderName" style="color: #2563eb; font-weight: 500;">
+              📨 Enviado por: {{ event.senderName }}
+            </div>
+
             <div class="list-meta" *ngIf="event.location">{{ event.location }}</div>
-            <div class="list-desc" *ngIf="event.description">{{ event.description }}</div>
           </div>
         </div>
 

@@ -11,32 +11,38 @@ export class DashboardService {
 
   private dashboardUrl = 'http://localhost:3000/api/dashboard';
   private eventsUrl = 'http://localhost:3000/api/events';
-  
+
   private socket: Socket;
   // Un observable para que el componente se suscriba a eventos nuevos
   public onNewEvent$: Subject<CalendarEvent> = new Subject();
 
-  constructor(private http: HttpClient) { 
+  constructor(private http: HttpClient) {
     // Inicializar conexión socket
     this.socket = io('http://localhost:3000');
     this.setupSocketListeners();
   }
+  // Agrega un nuevo Subject para el borrado
+  public onDeleteEvent$: Subject<string> = new Subject();
 
   private setupSocketListeners() {
     const userId = this.getUserId();
     if (userId) {
-        // Unirse a la sala con mi ID
-        this.socket.emit('join_room', userId);
-        
-        // Escuchar cuando me comparten algo
-        this.socket.on('nuevo_evento_compartido', (event: CalendarEvent) => {
-            console.log('Recibido evento en tiempo real:', event);
-            this.onNewEvent$.next(event); // Avisar al componente
-            alert(`¡Tienes un nuevo evento compartido: ${event.title}!`);
-        });
+      this.socket.emit('join_room', userId);
+
+      this.socket.on('nuevo_evento_compartido', (event: CalendarEvent) => {
+        this.onNewEvent$.next(event);
+        alert(`¡Nuevo evento compartido por ${event.senderName || 'alguien'}!`);
+      });
+
+      // [NUEVO] Listener de borrado
+      this.socket.on('evento_eliminado', (codigo_evento: string) => {
+        console.log('Evento eliminado remotamente:', codigo_evento);
+        this.onDeleteEvent$.next(codigo_evento);
+        alert('Un evento compartido ha sido eliminado.');
+      });
     }
   }
-  
+
   // Extraemos lógica de obtener ID para reusar
   private getUserId(): string | null {
     const userString = localStorage.getItem('user');

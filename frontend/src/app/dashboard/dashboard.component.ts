@@ -13,7 +13,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   monthYearDisplay = '';
   weekDays = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
   activeSection: 'calendar' | 'examenes' | 'tareas' | 'reuniones' | 'compartidos' = 'calendar';
+
   socketSubscription?: Subscription;
+  deleteSubscription?: Subscription;
+
   daysInMonth: any[] = [];
   events: CalendarEvent[] = [];
 
@@ -38,22 +41,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     // 3. Suscripción corregida
     this.socketSubscription = this.dashboardService.onNewEvent$.subscribe((newEvent: any) => {
-        // Usamos 'any' arriba o simplemente accedemos a .date si estamos seguros
-        this.events.push({
-            ...newEvent,
-            date: newEvent.date // <--- Eliminamos '|| newEvent.fec_inicio' que causaba el error
-        });
-        
-        // Regenerar calendario y contadores visualmente
-        if (newEvent.type) {
-            this.incrementMenuCount(newEvent.type);
-        }
+      // Usamos 'any' arriba o simplemente accedemos a .date si estamos seguros
+      this.events.push({
+        ...newEvent,
+        date: newEvent.date
+      });
+
+      // Regenerar calendario y contadores visualmente
+      if (newEvent.type) {
+        this.incrementMenuCount(newEvent.type);
+      }
+      this.generateCalendar();
+      this.deleteSubscription = this.dashboardService.onDeleteEvent$.subscribe((idEliminado) => {
+        // Filtramos el array para quitar el evento que llega por socket
+        this.events = this.events.filter(e => e.codigo_evento !== idEliminado);
+
+        // Actualizamos vista
         this.generateCalendar();
+        // Recalcular contadores
+        this.loadDashboard();
+      });
     });
   }
   ngOnDestroy(): void {
-      if (this.socketSubscription) {
-          this.socketSubscription.unsubscribe();
+      if (this.deleteSubscription) {
+          this.deleteSubscription.unsubscribe();
       }
   }
 
@@ -198,18 +210,29 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   get filteredEvents(): CalendarEvent[] {
-    if (this.activeSection === 'calendar' || this.activeSection === 'compartidos') {
+    // Si es calendario, no mostramos lista
+    if (this.activeSection === 'calendar') {
       return [];
     }
+
+    // [NUEVO] Lógica para la pestaña Compartidos
+    if (this.activeSection === 'compartidos') {
+        return this.events.filter(event => event.ownership === 'compartido');
+    }
+
+    // Lógica para examenes, tareas, reuniones...
     const typeMap: Record<string, CalendarEvent['type']> = {
       examenes: 'examen',
       tareas: 'tarea',
       reuniones: 'reunion'
     };
     const targetType = typeMap[this.activeSection];
+    
     return this.events
       .filter(event => event.type === targetType)
       .filter(event => !this.selectedDate || this.normalizeDate(event.date) === this.selectedDate)
+      // Ojo: filtramos solo los PROPIOS en las pestañas normales para no mezclar? 
+      // O dejamos todo junto. Generalmente se deja todo.
       .map(event => ({
         ...event,
         date: this.normalizeDate(event.date)

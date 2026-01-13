@@ -15,4 +15,5 @@ export interface CalendarEvent {
   maps?: string;
   sharedWithEmail?: string;
   ownership?: 'propio' | 'compartido'; // Para saber si es mío o me lo enviaron
+  senderName?: string;
 }
