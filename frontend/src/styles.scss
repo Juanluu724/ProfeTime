@@ -1,1 +1,44 @@
 /* You can add global styles to this file, and also import other style files */
+/* Estilos Globales */
+
+// Reseteo básico y aplicación de la fuente
+body {
+  margin: 0;
+  font-family: 'Poppins', sans-serif; /* Aplicamos la nueva fuente */
+  font-size: 14px;
+  color: #374151;
+  background-color: #f5f7fb;
+  -webkit-font-smoothing: antialiased; /* Hace que la letra se vea más nítida */
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// Aseguramos que los elementos de formulario también hereden la fuente
+input,
+button,
+select,
+textarea {
+  font-family: 'Poppins', sans-serif;
+}
+
+// Estilos para títulos más "bonitos" y marcados
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: 700; /* Negrita fuerte para títulos */
+  color: #111827;
+}
+
+// Scrollbar moderna (opcional, pero queda bien)
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1; 
+}
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1; 
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8; 
+}

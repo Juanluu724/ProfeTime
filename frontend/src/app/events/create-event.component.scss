@@ -42,20 +42,30 @@
 
 label {
     font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 500; /* Cambiado de 600 a 500 para que sea más suave */
+    color: #4b5563;   /* Un gris un poco más suave */
     display: block;
     margin-top: 14px;
+    margin-bottom: 4px; /* Un poco de espacio debajo del label */
 }
 
 input,
 textarea,
 select {
     width: 100%;
-    padding: 10px;
-    margin-top: 6px;
+    padding: 10px 12px;
+    margin-top: 0;      /* Quitamos margin top porque se lo dimos al label */
     border-radius: 8px;
-    border: 1px solid #dfe2e6;
-    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    background: #ffffff; /* Fondo blanco en inputs queda más limpio */
+    font-size: 0.9rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
 }
 
 textarea {
