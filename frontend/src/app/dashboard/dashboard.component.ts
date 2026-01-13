@@ -64,9 +64,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
   ngOnDestroy(): void {
-      if (this.deleteSubscription) {
-          this.deleteSubscription.unsubscribe();
-      }
+    if (this.deleteSubscription) {
+      this.deleteSubscription.unsubscribe();
+    }
   }
 
   loadDashboard(): void {
@@ -97,31 +97,35 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const firstDay = new Date(year, month, 1).getDay();
     const totalDays = new Date(year, month + 1, 0).getDate();
     const prevMonthDays = new Date(year, month, 0).getDate();
+    const realToday = new Date();
 
     for (let i = 0; i < firstDay; i++) {
       const day = prevMonthDays - firstDay + 1 + i;
-      this.daysInMonth.push({ day, isCurrentMonth: false, date: null });
+      this.daysInMonth.push({ day, isCurrentMonth: false, date: null, isToday: false });
     }
 
-    const events = Array.isArray(this.events) ? this.events : [];
-    for (let d = 1; d <= totalDays; d++) {
+    const events = Array.isArray(this.events) ? this.events : []; for (let d = 1; d <= totalDays; d++) {
       const dateStr = `${year}-${this.pad(month + 1)}-${this.pad(d)}`;
       const event = events.find(e => this.normalizeDate(e.date) === dateStr);
-
+      const isToday =
+        d === realToday.getDate() &&
+        month === realToday.getMonth() &&
+        year === realToday.getFullYear();
       this.daysInMonth.push({
         day: d,
         isCurrentMonth: true,
         type: event?.type || null,
         title: event?.title || null,
         description: event?.description || null,
-        date: dateStr
+        date: dateStr,
+        isToday: isToday
       });
     }
 
     const totalCells = 42;
     const trailingDays = Math.max(totalCells - this.daysInMonth.length, 0);
     for (let i = 1; i <= trailingDays; i++) {
-      this.daysInMonth.push({ day: i, isCurrentMonth: false, date: null });
+      this.daysInMonth.push({ day: i, isCurrentMonth: false, date: null, isToday: false });
     }
   }
 
@@ -217,7 +221,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     // [NUEVO] Lógica para la pestaña Compartidos
     if (this.activeSection === 'compartidos') {
-        return this.events.filter(event => event.ownership === 'compartido');
+      return this.events.filter(event => event.ownership === 'compartido');
     }
 
     // Lógica para examenes, tareas, reuniones...
@@ -227,7 +231,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       reuniones: 'reunion'
     };
     const targetType = typeMap[this.activeSection];
-    
+
     return this.events
       .filter(event => event.type === targetType)
       .filter(event => !this.selectedDate || this.normalizeDate(event.date) === this.selectedDate)

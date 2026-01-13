@@ -344,6 +344,20 @@
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
 }
 
+/* ... dentro de .day-card o al mismo nivel ... */
+
+.day-card.today {
+  border: 2px solid #2563eb;
+  /* Azul intenso */
+  background-color: #f0f7ff;
+  /* (Opcional) Un fondo azul muy clarito para resaltar más */
+  font-weight: 600;
+  /* (Opcional) Hace el número del día un poco más grueso */
+  position: relative;
+  z-index: 1;
+  /* Asegura que el borde se vea por encima de otros elementos */
+}
+
 .day-number {
   font-size: 12px;
   font-weight: 600;
@@ -414,7 +428,7 @@
   align-items: center;
 }
 
-.btn-edit, 
+.btn-edit,
 .btn-delete {
   border: none;
   border-radius: 50px;

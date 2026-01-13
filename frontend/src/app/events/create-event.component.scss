@@ -14,13 +14,16 @@
     max-height: 90vh;
     border-radius: 12px;
     overflow-y: auto;
+    /* Aseguramos que el padding no afecte al ancho total */
+    box-sizing: border-box; 
 }
 
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 18px 24px;
+    /* Aumentamos el padding lateral a 32px para alejarlo del borde */
+    padding: 20px 32px; 
     border-bottom: 1px solid #e5e7eb;
 }
 
@@ -32,7 +35,9 @@
 }
 
 .modal-body {
-    padding: 24px;
+    /* Aumentamos el padding: 24px arriba/abajo, 32px a los lados */
+    /* Esto soluciona el colapso contra el borde derecho */
+    padding: 24px 32px; 
 }
 
 .modal-body h4 {
@@ -76,7 +81,7 @@ textarea {
 .grid-2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 14px;
+    gap: 24px; 
 }
 
 .grid-2.small {
@@ -131,4 +136,8 @@ hr {
     border: none;
     padding: 10px 18px;
     border-radius: 8px;
+}
+
+input, select, textarea {
+    box-sizing: border-box; /* Para que el padding no rompa el ancho */
 }

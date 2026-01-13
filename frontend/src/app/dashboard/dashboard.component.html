@@ -101,7 +101,8 @@
 
       <div class="calendar-grid">
         <div *ngFor="let d of daysInMonth" class="day-card" [class.faded]="!d.isCurrentMonth"
-          [class.selected]="selectedDate && d.date === selectedDate" (click)="onDaySelect(d)">
+          [class.selected]="selectedDate && d.date === selectedDate" [class.today]="d.isToday" (click)="onDaySelect(d)">
+
           <span class="day-number">{{ d.day }}</span>
 
           <span *ngIf="d.type" class="event-dot" [ngClass]="d.type"></span>
