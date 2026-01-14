@@ -73,6 +73,9 @@ export class CreateEventComponent implements OnInit {
       this.dashboardService.createEvent(payload).subscribe({
         next: (res) => {
           this.saving = false;
+          if (res?.googleSync && res.googleSync.ok === false) {
+            alert('Evento guardado en ProfeTime, pero no en Google Calendar. Vuelve a iniciar sesion con Google.');
+          }
           this.saved.emit(res);
           this.close.emit();
         },

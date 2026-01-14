@@ -57,6 +57,20 @@
         </span>
         <span class="badge">{{ menuCounts.reuniones }}</span>
       </button>
+      <button class="item" type="button" [class.active]="activeSection === 'otros'"
+        (click)="setSection('otros')">
+        <span class="item-left">
+          <span class="menu-icon other">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="5" cy="12" r="1.8"></circle>
+              <circle cx="12" cy="12" r="1.8"></circle>
+              <circle cx="19" cy="12" r="1.8"></circle>
+            </svg>
+          </span>
+          <span>Otros</span>
+        </span>
+        <span class="badge">{{ menuCounts.otros }}</span>
+      </button>
       <button class="item" type="button" [class.active]="activeSection === 'compartidos'"
         (click)="setSection('compartidos')">
         <span class="item-left">
@@ -146,7 +160,9 @@
     </div>
 
     <section class="list-view" *ngIf="activeSection !== 'calendar'">
-      <div class="list-empty" *ngIf="activeSection === 'compartidos'">No hay eventos compartidos.</div>
+      <div class="list-empty" *ngIf="activeSection === 'compartidos' && filteredEvents.length === 0">
+        No hay eventos compartidos.
+      </div>
       <div class="list-empty" *ngIf="activeSection !== 'compartidos' && filteredEvents.length === 0">
         No hay eventos.
       </div>

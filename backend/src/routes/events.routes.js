@@ -35,6 +35,13 @@ async function getAuthClientForUser(userId) {
 }
 
 function buildCalendarTimes(date, startTime, endTime) {
+  const normalizeTime = (value) => {
+    if (!value) return value;
+    const trimmed = String(value).trim();
+    if (trimmed.length >= 5) return trimmed.slice(0, 5);
+    return trimmed;
+  };
+
   if (!startTime && !endTime) {
     const start = { date };
     const next = new Date(`${date}T00:00:00`);
@@ -43,8 +50,8 @@ function buildCalendarTimes(date, startTime, endTime) {
     return { start, end };
   }
 
-  const startValue = startTime || "09:00";
-  const endValue = endTime || "10:00";
+  const startValue = normalizeTime(startTime) || "09:00";
+  const endValue = normalizeTime(endTime) || "10:00";
   const startDateTime = new Date(`${date}T${startValue}:00`);
   let endDateTime = new Date(`${date}T${endValue}:00`);
   if (endDateTime <= startDateTime) {
@@ -61,7 +68,9 @@ function buildCalendarTimes(date, startTime, endTime) {
 async function createGoogleCalendarEvent(userId, payload) {
   const authClient = await getAuthClientForUser(userId);
   if (!authClient) {
-    return null;
+    const err = new Error("Google account not connected.");
+    err.code = "GOOGLE_NOT_CONNECTED";
+    throw err;
   }
 
   const calendar = google.calendar({ version: "v3", auth: authClient });
@@ -168,6 +177,7 @@ router.post("/", async (req, res) => {
       [code, userId, date, type, title, description, startTime, endTime, location, meet, drive, maps]
     );
 
+    let googleSync = { ok: true };
     try {
       await createGoogleCalendarEvent(userId, {
         date,
@@ -181,7 +191,11 @@ router.post("/", async (req, res) => {
         maps
       });
     } catch (err) {
-      console.error("Error creando evento en Google Calendar:", err);
+      googleSync = {
+        ok: false,
+        reason: err?.code === "GOOGLE_NOT_CONNECTED" ? "not_connected" : "google_error"
+      };
+      console.error("Error creando evento en Google Calendar:", err?.response?.data || err);
     }
 
     if (sharedWithEmail) {
@@ -229,12 +243,12 @@ router.post("/", async (req, res) => {
             maps
           });
         } catch (err) {
-          console.error("Error creando evento en Google Calendar para invitado:", err);
+          console.error("Error creando evento en Google Calendar para invitado:", err?.response?.data || err);
         }
       }
     }
 
-    res.status(201).json({ codigo_evento: code, ...req.body });
+    res.status(201).json({ codigo_evento: code, ...req.body, googleSync });
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Error creando evento" });

@@ -17,7 +17,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   currentDate = new Date();
   monthYearDisplay = '';
   weekDays = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
-  activeSection: 'calendar' | 'examenes' | 'tareas' | 'reuniones' | 'compartidos' = 'calendar';
+  activeSection: 'calendar' | 'examenes' | 'tareas' | 'reuniones' | 'otros' | 'compartidos' = 'calendar';
 
   socketSubscription?: Subscription;
   deleteSubscription?: Subscription;
@@ -241,7 +241,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  setSection(section: 'calendar' | 'examenes' | 'tareas' | 'reuniones' | 'compartidos'): void {
+  setSection(section: 'calendar' | 'examenes' | 'tareas' | 'reuniones' | 'otros' | 'compartidos'): void {
     this.activeSection = section;
     this.selectedDate = null;
   }
@@ -257,14 +257,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const typeMap: Record<string, CalendarEvent['type']> = {
       examenes: 'examen',
       tareas: 'tarea',
-      reuniones: 'reunion'
+      reuniones: 'reunion',
+      otros: 'otro'
     };
     const targetType = typeMap[this.activeSection];
 
     return this.events
       .filter(event => event.type === targetType)
-        .filter(event => event.ownership !== 'compartido')
-        .filter(event => !this.selectedDate || this.normalizeDate(event.date) === this.selectedDate)
+      .filter(event => !this.selectedDate || this.normalizeDate(event.date) === this.selectedDate)
       .map(event => ({
         ...event,
         date: this.normalizeDate(event.date)
@@ -276,6 +276,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       case 'examenes': return 'Examenes';
       case 'tareas': return 'Tareas';
       case 'reuniones': return 'Reuniones';
+      case 'otros': return 'Otros';
       case 'compartidos': return 'Compartidos';
       default: return 'Calendario';
     }
@@ -312,10 +313,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // Si hay eventos en ese dÃ­a, cambiamos a la secciÃ³n del primer evento
     if (day.events && day.events.length > 0) {
       const firstType = day.events[0].type;
-      const typeToSection: Record<string, 'examenes' | 'tareas' | 'reuniones'> = {
+      const typeToSection: Record<string, 'examenes' | 'tareas' | 'reuniones' | 'otros'> = {
         examen: 'examenes',
         tarea: 'tareas',
-        reunion: 'reuniones'
+        reunion: 'reuniones',
+        otro: 'otros'
       };
       if (typeToSection[firstType]) {
         this.activeSection = typeToSection[firstType];

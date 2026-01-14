@@ -52,9 +52,16 @@ router.post("/meet", async (req, res) => {
       return res.status(403).json({ msg: "Cuenta no vinculada a Google." });
     }
 
+    const normalizeTime = (value) => {
+      if (!value) return value;
+      const trimmed = String(value).trim();
+      if (trimmed.length >= 5) return trimmed.slice(0, 5);
+      return trimmed;
+    };
+
     const calendar = google.calendar({ version: "v3", auth: authClient });
-    const start = startTime || "09:00";
-    const end = endTime || "10:00";
+    const start = normalizeTime(startTime) || "09:00";
+    const end = normalizeTime(endTime) || "10:00";
     const startDateTime = new Date(`${date}T${start}:00`);
     let endDateTime = new Date(`${date}T${end}:00`);
     if (Number.isNaN(startDateTime.getTime()) || Number.isNaN(endDateTime.getTime())) {
