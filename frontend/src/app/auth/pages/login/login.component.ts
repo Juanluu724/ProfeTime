@@ -1,13 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
 
   correo: string = '';
   password: string = '';
@@ -17,8 +17,28 @@ export class LoginComponent {
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) { }
+
+  ngOnInit(): void {
+    this.route.queryParams.subscribe(params => {
+      const authPayload = params['auth'];
+      if (!authPayload) {
+        return;
+      }
+
+      try {
+        const decoded = JSON.parse(atob(authPayload));
+        localStorage.setItem("user", JSON.stringify(decoded));
+        localStorage.setItem("profetime_user", JSON.stringify(decoded));
+        this.router.navigate(['/dashboard']);
+      } catch {
+        this.mensaje = "No se pudo completar el inicio con Google.";
+        this.mensajeTipo = "error";
+      }
+    });
+  }
 
   onLogin() {
     this.mensaje = '';
@@ -40,5 +60,9 @@ export class LoginComponent {
         this.mensajeTipo = "error";
       }
     });
+  }
+
+  loginWithGoogle() {
+    window.location.href = "http://localhost:3000/api/auth/google";
   }
 }

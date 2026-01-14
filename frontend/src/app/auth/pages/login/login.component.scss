@@ -74,6 +74,35 @@
     background: #0f47c7;
   }
 
+.oauth {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.divider {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.google-btn {
+  width: 100%;
+  background: #ffffff;
+  color: #111827;
+  border: 1px solid #d1d5db;
+}
+
+.google-btn:hover {
+  background: #f3f4f6;
+}
+
+.domain-hint {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
 .mensaje {
   margin-top: 15px;
   padding: 12px;

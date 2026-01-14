@@ -15,6 +15,8 @@ export class CreateEventComponent implements OnInit {
 
   errorMessage = '';
   saving = false;
+  generatingMeet = false;
+  creatingDrive = false;
 
   event: CalendarEvent = {
     title: '',
@@ -67,5 +69,57 @@ export class CreateEventComponent implements OnInit {
         }
       });
     }
+  }
+
+  generateMeet(): void {
+    this.errorMessage = '';
+    if (!this.event.date) {
+      this.errorMessage = 'La fecha es obligatoria para Meet.';
+      return;
+    }
+
+    this.generatingMeet = true;
+    this.dashboardService
+      .generateMeet({
+        date: this.event.date,
+        startTime: this.event.startTime,
+        endTime: this.event.endTime,
+        title: this.event.title
+      })
+      .subscribe({
+        next: (res) => {
+          this.generatingMeet = false;
+          if (res.meetLink) {
+            this.event.meet = res.meetLink;
+          } else {
+            this.errorMessage = 'No se pudo generar el enlace de Meet.';
+          }
+        },
+        error: () => {
+          this.generatingMeet = false;
+          this.errorMessage = 'Error al generar Meet.';
+        }
+      });
+  }
+
+  attachDrive(): void {
+    this.errorMessage = '';
+    this.creatingDrive = true;
+    this.dashboardService
+      .createDriveFolder({ name: this.event.title || 'ProfeTime' })
+      .subscribe({
+        next: (res) => {
+          this.creatingDrive = false;
+          if (res.link) {
+            this.event.drive = res.link;
+          } else {
+            this.errorMessage = 'No se pudo crear la carpeta de Drive.';
+          }
+        },
+        error: () => {
+          this.creatingDrive = false;
+          this.errorMessage = 'Error al crear carpeta en Drive.';
+        }
+      });
   }
 }

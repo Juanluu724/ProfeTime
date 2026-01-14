@@ -63,17 +63,14 @@
             <label>Google Meet</label>
             <div class="grid-2 small">
                 <input placeholder="https://meet.google.com/..." [(ngModel)]="event.meet" />
-                <button class="secondary">Generar</button>
+                <button class="secondary" type="button" (click)="generateMeet()" [disabled]="generatingMeet">Generar</button>
             </div>
 
             <label>Google Drive</label>
             <div class="grid-2 small">
                 <input placeholder="https://drive.google.com/..." [(ngModel)]="event.drive" />
-                <button class="secondary">Adjuntar</button>
+                <button class="secondary" type="button" (click)="attachDrive()" [disabled]="creatingDrive">Adjuntar</button>
             </div>
-
-            <label>Google Maps</label>
-            <input placeholder="https://maps.google.com/..." [(ngModel)]="event.maps" />
 
         </section>
 

@@ -11,6 +11,7 @@ export class DashboardService {
 
   private dashboardUrl = 'http://localhost:3000/api/dashboard';
   private eventsUrl = 'http://localhost:3000/api/events';
+  private googleUrl = 'http://localhost:3000/api/google';
 
   private socket: Socket;
   // Un observable para que el componente se suscriba a eventos nuevos
@@ -79,5 +80,26 @@ export class DashboardService {
 
   deleteEvent(codigo_evento: string): Observable<any> {
     return this.http.delete(`${this.eventsUrl}/${codigo_evento}`, this.getHeaders());
+  }
+
+  generateMeet(payload: {
+    date: string;
+    startTime?: string;
+    endTime?: string;
+    title?: string;
+  }): Observable<{ meetLink?: string }> {
+    return this.http.post<{ meetLink?: string }>(
+      `${this.googleUrl}/meet`,
+      payload,
+      this.getHeaders()
+    );
+  }
+
+  createDriveFolder(payload: { name?: string }): Observable<{ link?: string }> {
+    return this.http.post<{ link?: string }>(
+      `${this.googleUrl}/drive/folder`,
+      payload,
+      this.getHeaders()
+    );
   }
 }

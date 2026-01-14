@@ -32,6 +32,7 @@ require("./src/config/db");
 app.use("/api/auth", require("./src/routes/auth.routes"));
 app.use("/api/dashboard", require("./src/routes/dashboard.routes"));
 app.use("/api/events", require("./src/routes/events.routes")); 
+app.use("/api/google", require("./src/routes/google.routes"));
 
 // Escuchar conexiones de clientes
 io.on("connection", (socket) => {
