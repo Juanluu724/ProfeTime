@@ -1,5 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { DashboardService } from '../auth/services/dashboard.service';
+import { AuthService } from '../auth/services/auth.service';
+import { Router } from '@angular/router';
 import { CalendarEvent } from '../models/event.model';
 import { Subscription } from 'rxjs';
 
@@ -9,6 +11,7 @@ import { Subscription } from 'rxjs';
   styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit, OnDestroy {
+  nombreUsuario: string = '';
   currentDate = new Date();
   monthYearDisplay = '';
   weekDays = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
@@ -24,7 +27,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   selectedDate: string | null = null;
 
   showCreateEvent = false;
-  eventToEdit?: CalendarEvent; // <- Para editar
+  eventToEdit?: CalendarEvent;
 
   menuCounts = {
     examenes: 0,
@@ -33,47 +36,57 @@ export class DashboardComponent implements OnInit, OnDestroy {
     otros: 0
   };
 
-  constructor(private dashboardService: DashboardService) { }
+  constructor(
+    private dashboardService: DashboardService,
+    // 2. INYECCIÓN AÑADIDA
+    private authService: AuthService,
+    private router: Router
+  ) { }
 
   ngOnInit(): void {
+    // 3. LÓGICA PARA OBTENER EL NOMBRE
+    this.authService.user$.subscribe(user => {
+      if (user) {
+        // Intenta coger 'nombre', si no 'email', si no pone 'Profe'
+        this.nombreUsuario = user.nom || 'Profe';
+      }
+    });
+
     this.updateMonthTitle();
     this.loadDashboard();
 
-    // 3. Suscripción corregida
+    // Suscripción a WebSockets
     this.socketSubscription = this.dashboardService.onNewEvent$.subscribe((newEvent: any) => {
-      // Usamos 'any' arriba o simplemente accedemos a .date si estamos seguros
       this.events.push({
         ...newEvent,
         date: newEvent.date
       });
 
-      // Regenerar calendario y contadores visualmente
       if (newEvent.type) {
         this.incrementMenuCount(newEvent.type);
       }
       this.generateCalendar();
-      this.deleteSubscription = this.dashboardService.onDeleteEvent$.subscribe((idEliminado) => {
-        // Filtramos el array para quitar el evento que llega por socket
-        this.events = this.events.filter(e => e.codigo_evento !== idEliminado);
 
-        // Actualizamos vista
+      this.deleteSubscription = this.dashboardService.onDeleteEvent$.subscribe((idEliminado) => {
+        this.events = this.events.filter(e => e.codigo_evento !== idEliminado);
         this.generateCalendar();
-        // Recalcular contadores
         this.loadDashboard();
       });
     });
   }
+
   ngOnDestroy(): void {
     if (this.deleteSubscription) {
       this.deleteSubscription.unsubscribe();
+    }
+    if (this.socketSubscription) {
+      this.socketSubscription.unsubscribe();
     }
   }
 
   loadDashboard(): void {
     this.dashboardService.getDashboard().subscribe((data: any) => {
-
       this.menuCounts = data.menuCounts || { examenes: 0, tareas: 0, reuniones: 0, otros: 0 };
-
       const rawEvents = data.calendarEvents || [];
 
       this.events = rawEvents.map((event: any) => ({
@@ -99,10 +112,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const prevMonthDays = new Date(year, month, 0).getDate();
     const realToday = new Date();
 
-    // Días previos (mes anterior)
+    // Días previos
     for (let i = 0; i < firstDay; i++) {
       const day = prevMonthDays - firstDay + 1 + i;
-      // IMPORTANTE: Inicializamos 'events' como array vacío
       this.daysInMonth.push({ day, isCurrentMonth: false, date: null, isToday: false, events: [] });
     }
 
@@ -111,8 +123,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // Días del mes actual
     for (let d = 1; d <= totalDays; d++) {
       const dateStr = `${year}-${this.pad(month + 1)}-${this.pad(d)}`;
-
-      // CAMBIO CLAVE: Usamos .filter() en vez de .find() para traer TODOS los eventos del día
       const dailyEvents = events.filter(e => this.normalizeDate(e.date) === dateStr);
 
       const isToday =
@@ -123,14 +133,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.daysInMonth.push({
         day: d,
         isCurrentMonth: true,
-        events: dailyEvents, // Guardamos el array completo
+        events: dailyEvents,
         date: dateStr,
         isToday: isToday
-        // Eliminamos type, title y description individuales de aquí porque ahora están dentro de 'events'
       });
     }
 
-    // Días posteriores (mes siguiente) para rellenar la cuadrícula
+    // Días posteriores
     const totalCells = 42;
     const trailingDays = Math.max(totalCells - this.daysInMonth.length, 0);
     for (let i = 1; i <= trailingDays; i++) {
@@ -161,7 +170,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-
   closeCreateEvent(): void {
     this.showCreateEvent = false;
     this.eventToEdit = undefined;
@@ -172,10 +180,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (event?.date) {
       const exists = this.events.find(e => e.codigo_evento === event.codigo_evento);
       if (exists) {
-
         this.events = this.events.map(e => e.codigo_evento === event.codigo_evento ? event : e);
       } else {
-
         this.events = [...this.events, event];
         this.incrementMenuCount(event.type || 'otro');
       }
@@ -195,7 +201,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.showCreateEvent = true;
   }
 
-
   eliminarEvento(event: CalendarEvent) {
     console.log('Intentando borrar evento:', event);
     if (!event.codigo_evento) {
@@ -206,9 +211,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (confirm(`¿Seguro que quieres eliminar "${event.title}"?`)) {
       this.dashboardService.deleteEvent(event.codigo_evento).subscribe({
         next: () => {
-
           this.events = this.events.filter(e => e.codigo_evento !== event.codigo_evento);
-          this.loadDashboard(); // Refrescamos contadores
+          this.loadDashboard();
         },
         error: (err) => {
           console.error(err);
@@ -217,23 +221,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
     }
   }
+
   setSection(section: 'calendar' | 'examenes' | 'tareas' | 'reuniones' | 'compartidos'): void {
     this.activeSection = section;
     this.selectedDate = null;
   }
 
   get filteredEvents(): CalendarEvent[] {
-    // Si es calendario, no mostramos lista
     if (this.activeSection === 'calendar') {
       return [];
     }
-
-    // [NUEVO] Lógica para la pestaña Compartidos
     if (this.activeSection === 'compartidos') {
       return this.events.filter(event => event.ownership === 'compartido');
     }
 
-    // Lógica para examenes, tareas, reuniones...
     const typeMap: Record<string, CalendarEvent['type']> = {
       examenes: 'examen',
       tareas: 'tarea',
@@ -244,8 +245,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return this.events
       .filter(event => event.type === targetType)
       .filter(event => !this.selectedDate || this.normalizeDate(event.date) === this.selectedDate)
-      // Ojo: filtramos solo los PROPIOS en las pestañas normales para no mezclar? 
-      // O dejamos todo junto. Generalmente se deja todo.
       .map(event => ({
         ...event,
         date: this.normalizeDate(event.date)
@@ -274,6 +273,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return;
     }
     this.selectedDate = this.normalizeDate(day.date);
+
+    // Si hay eventos en ese día, cambiamos a la sección del primer evento
     if (day.events && day.events.length > 0) {
       const firstType = day.events[0].type;
       const typeToSection: Record<string, 'examenes' | 'tareas' | 'reuniones'> = {
@@ -281,20 +282,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
         tarea: 'tareas',
         reunion: 'reuniones'
       };
-      // Solo cambiamos de sección si el tipo mapea a una sección válida
       if (typeToSection[firstType]) {
         this.activeSection = typeToSection[firstType];
       }
-    }
-    const typeToSection: Record<string, 'examenes' | 'tareas' | 'reuniones'> = {
-      examen: 'examenes',
-      tarea: 'tareas',
-      reunion: 'reuniones'
-    };
-    const section = typeToSection[day.type];
-    if (section) {
-      this.activeSection = section;
-      this.selectedDate = this.normalizeDate(day.date);
     }
   }
 
@@ -324,10 +314,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (value.includes('T')) return value.slice(0, 10);
     return value;
   }
-
-  private getEventTypeByDate(dateStr: string): CalendarEvent['type'] | null {
-    const target = this.normalizeDate(dateStr);
-    const match = this.events.find(event => this.normalizeDate(event.date) === target);
-    return match?.type || null;
+  
+  logout(): void {
+    // 1. Llamamos al servicio para borrar token (si tienes el método creado)
+    this.authService.logout(); 
+    
+    // 2. Redirigimos al login
+    this.router.navigate(['/login']);
   }
 }

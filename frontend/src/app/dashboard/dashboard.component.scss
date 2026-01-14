@@ -453,14 +453,71 @@
   flex-direction: column;
   gap: 4px;
   width: 100%;
-  overflow-y: auto; /* Permite scroll si hay muchos eventos */
-  max-height: 75px; /* Altura máxima para evitar que el día crezca demasiado */
+  overflow-y: auto;
+  /* Permite scroll si hay muchos eventos */
+  max-height: 75px;
+  /* Altura máxima para evitar que el día crezca demasiado */
 }
 
 /* Ajuste al pill para que ocupe el ancho */
 .event-pill {
-  width: 100%; 
+  width: 100%;
   box-sizing: border-box;
-  font-size: 10px; /* Un poco más pequeño para que quepan mejor */
+  font-size: 10px;
+  /* Un poco más pequeño para que quepan mejor */
   padding: 4px 6px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 22px;
+  gap: 20px;
+
+  /* --- NUEVO BLOQUE PERFIL --- */
+  .user-profile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: auto;
+    /* LA CLAVE: Esto empuja la leyenda al final a la derecha */
+    color: #4b5563;
+    font-size: 14px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+      color: #6b7280;
+    }
+
+    strong {
+      color: #111827;
+      font-weight: 600;
+    }
+    .logout-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      margin-left: 8px; /* Separarlo un poco del nombre */
+      color: #ef4444;   /* Color rojo suave para indicar "salir" */
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      transition: all 0.2s;
+
+      &:hover {
+        background-color: #fee2e2;
+        color: #b91c1c;
+      }
+      
+      svg {
+        width: 18px;
+        height: 18px;
+        stroke-width: 2.5;
+      }
+    }
+  }
+
+  /* --------------------------- */
 }
