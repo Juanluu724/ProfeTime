@@ -99,33 +99,42 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const prevMonthDays = new Date(year, month, 0).getDate();
     const realToday = new Date();
 
+    // Días previos (mes anterior)
     for (let i = 0; i < firstDay; i++) {
       const day = prevMonthDays - firstDay + 1 + i;
-      this.daysInMonth.push({ day, isCurrentMonth: false, date: null, isToday: false });
+      // IMPORTANTE: Inicializamos 'events' como array vacío
+      this.daysInMonth.push({ day, isCurrentMonth: false, date: null, isToday: false, events: [] });
     }
 
-    const events = Array.isArray(this.events) ? this.events : []; for (let d = 1; d <= totalDays; d++) {
+    const events = Array.isArray(this.events) ? this.events : [];
+
+    // Días del mes actual
+    for (let d = 1; d <= totalDays; d++) {
       const dateStr = `${year}-${this.pad(month + 1)}-${this.pad(d)}`;
-      const event = events.find(e => this.normalizeDate(e.date) === dateStr);
+
+      // CAMBIO CLAVE: Usamos .filter() en vez de .find() para traer TODOS los eventos del día
+      const dailyEvents = events.filter(e => this.normalizeDate(e.date) === dateStr);
+
       const isToday =
         d === realToday.getDate() &&
         month === realToday.getMonth() &&
         year === realToday.getFullYear();
+
       this.daysInMonth.push({
         day: d,
         isCurrentMonth: true,
-        type: event?.type || null,
-        title: event?.title || null,
-        description: event?.description || null,
+        events: dailyEvents, // Guardamos el array completo
         date: dateStr,
         isToday: isToday
+        // Eliminamos type, title y description individuales de aquí porque ahora están dentro de 'events'
       });
     }
 
+    // Días posteriores (mes siguiente) para rellenar la cuadrícula
     const totalCells = 42;
     const trailingDays = Math.max(totalCells - this.daysInMonth.length, 0);
     for (let i = 1; i <= trailingDays; i++) {
-      this.daysInMonth.push({ day: i, isCurrentMonth: false, date: null, isToday: false });
+      this.daysInMonth.push({ day: i, isCurrentMonth: false, date: null, isToday: false, events: [] });
     }
   }
 
@@ -261,8 +270,21 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   onDaySelect(day: any): void {
-    if (!day?.isCurrentMonth || !day?.type || !day?.date) {
+    if (!day?.isCurrentMonth || !day?.date) {
       return;
+    }
+    this.selectedDate = this.normalizeDate(day.date);
+    if (day.events && day.events.length > 0) {
+      const firstType = day.events[0].type;
+      const typeToSection: Record<string, 'examenes' | 'tareas' | 'reuniones'> = {
+        examen: 'examenes',
+        tarea: 'tareas',
+        reunion: 'reuniones'
+      };
+      // Solo cambiamos de sección si el tipo mapea a una sección válida
+      if (typeToSection[firstType]) {
+        this.activeSection = typeToSection[firstType];
+      }
     }
     const typeToSection: Record<string, 'examenes' | 'tareas' | 'reuniones'> = {
       examen: 'examenes',

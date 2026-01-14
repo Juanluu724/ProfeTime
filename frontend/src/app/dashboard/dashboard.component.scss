@@ -447,3 +447,20 @@
     transform: translateY(-1px);
   }
 }
+
+.events-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  overflow-y: auto; /* Permite scroll si hay muchos eventos */
+  max-height: 75px; /* Altura máxima para evitar que el día crezca demasiado */
+}
+
+/* Ajuste al pill para que ocupe el ancho */
+.event-pill {
+  width: 100%; 
+  box-sizing: border-box;
+  font-size: 10px; /* Un poco más pequeño para que quepan mejor */
+  padding: 4px 6px;
+}

@@ -105,10 +105,12 @@
 
           <span class="day-number">{{ d.day }}</span>
 
-          <span *ngIf="d.type" class="event-dot" [ngClass]="d.type"></span>
-          <div *ngIf="d.type" class="event-pill" [ngClass]="d.type">
-            {{ d.title || typeLabel(d.type) }}
+          <div class="events-stack" *ngIf="d.events && d.events.length > 0">
+            <div *ngFor="let ev of d.events" class="event-pill" [ngClass]="ev.type">
+              {{ ev.title || typeLabel(ev.type) }}
+            </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -132,20 +134,18 @@
 
             <div class="list-meta">
               <span>{{ formatDateLabel(event.date) }}</span>
-            </div>
 
-            <div class="list-meta" *ngIf="event.senderName" style="color: #2563eb; font-weight: 500;">
-              📨 Enviado por: {{ event.senderName }}
+              <span *ngIf="event.startTime" style="margin-left: 8px; color: #4b5563;">
+                • {{ formatTimeRange(event.startTime, event.endTime) }}
+              </span>
             </div>
-
-            <div class="list-meta" *ngIf="event.location">{{ event.location }}</div>
           </div>
-        </div>
 
 
-        <div class="list-actions">
-          <button class="btn-edit" (click)="editarEvento(event)">Editar</button>
-          <button class="btn-delete" (click)="eliminarEvento(event)">Borrar</button>
+          <div class="list-actions">
+            <button class="btn-edit" (click)="editarEvento(event)">Editar</button>
+            <button class="btn-delete" (click)="eliminarEvento(event)">Borrar</button>
+          </div>
         </div>
       </div>
     </section>
