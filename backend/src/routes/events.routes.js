@@ -1,33 +1,136 @@
 const express = require("express");
+const { google } = require("googleapis");
 const router = express.Router();
 const db = require("../config/db");
 
-// GET: Eventos propios y compartidos con datos del remitente
+function createOAuthClient() {
+  return new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GOOGLE_REDIRECT_URI
+  );
+}
+
+async function getAuthClientForUser(userId) {
+  const [rows] = await db.promise().query(
+    "SELECT access_token, refresh_token, scope, token_type, expiry_date FROM google_tokens WHERE codigo_usuario = ?",
+    [userId]
+  );
+
+  if (!rows.length) {
+    return null;
+  }
+
+  const tokenRow = rows[0];
+  const client = createOAuthClient();
+  client.setCredentials({
+    access_token: tokenRow.access_token,
+    refresh_token: tokenRow.refresh_token,
+    scope: tokenRow.scope,
+    token_type: tokenRow.token_type,
+    expiry_date: tokenRow.expiry_date
+  });
+
+  return client;
+}
+
+function buildCalendarTimes(date, startTime, endTime) {
+  if (!startTime && !endTime) {
+    const start = { date };
+    const next = new Date(`${date}T00:00:00`);
+    next.setDate(next.getDate() + 1);
+    const end = { date: next.toISOString().slice(0, 10) };
+    return { start, end };
+  }
+
+  const startValue = startTime || "09:00";
+  const endValue = endTime || "10:00";
+  const startDateTime = new Date(`${date}T${startValue}:00`);
+  let endDateTime = new Date(`${date}T${endValue}:00`);
+  if (endDateTime <= startDateTime) {
+    endDateTime.setDate(endDateTime.getDate() + 1);
+  }
+  const endDate = endDateTime.toISOString().slice(0, 10);
+  const endTimeFinal = endDateTime.toISOString().slice(11, 19);
+  return {
+    start: { dateTime: `${date}T${startValue}:00`, timeZone: "Europe/Madrid" },
+    end: { dateTime: `${endDate}T${endTimeFinal}`, timeZone: "Europe/Madrid" }
+  };
+}
+
+async function createGoogleCalendarEvent(userId, payload) {
+  const authClient = await getAuthClientForUser(userId);
+  if (!authClient) {
+    return null;
+  }
+
+  const calendar = google.calendar({ version: "v3", auth: authClient });
+  const { date, startTime, endTime, title, description, location, meet, drive, maps } = payload;
+  const { start, end } = buildCalendarTimes(date, startTime, endTime);
+
+  const descriptionParts = [
+    description || "",
+    location ? `Ubicacion: ${location}` : "",
+    meet ? `Meet: ${meet}` : "",
+    drive ? `Drive: ${drive}` : "",
+    maps ? `Maps: ${maps}` : ""
+  ].filter(Boolean);
+
+  const requestBody = {
+    summary: title || "Evento",
+    description: descriptionParts.join("\n"),
+    location: location || undefined,
+    start,
+    end
+  };
+
+  const response = await calendar.events.insert({
+    calendarId: "primary",
+    requestBody
+  });
+
+  return response.data;
+}
+
 router.get("/", async (req, res) => {
   try {
-    const userId = req.headers['x-user-id'];
-    
-    // Consulta UNION mejorada
+    const userId = req.headers["x-user-id"];
+
     const query = `
-      /* Eventos PROPIOS */
-      SELECT e.codigo_evento, DATE_FORMAT(e.fec_inicio, '%Y-%m-%d') AS date, e.tipo AS type, 
-       e.titulo AS title, e.descripcion AS description, e.hora_inicio AS startTime, 
-       e.hora_fin AS endTime, e.ubicacion AS location,
-       'propio' as ownership,
-       NULL as senderName /* No necesitamos remitente si es propio */
-       FROM evento e WHERE e.codigo_usuario_fk = ?
-       
-       UNION
-       
-       /* Eventos COMPARTIDOS (traemos nombre del dueño) */
-       SELECT e.codigo_evento, DATE_FORMAT(e.fec_inicio, '%Y-%m-%d') AS date, e.tipo AS type, 
-       e.titulo AS title, e.descripcion AS description, e.hora_inicio AS startTime, 
-       e.hora_fin AS endTime, e.ubicacion AS location,
-       'compartido' as ownership,
-       CONCAT(u.nom, ' ', u.apes) as senderName
-       FROM evento e 
-       JOIN evento_participante ep ON e.codigo_evento = ep.codigo_evento
-       JOIN usuario u ON e.codigo_usuario_fk = u.codigo_usuario
+      SELECT e.codigo_evento,
+             DATE_FORMAT(e.fec_inicio, '%Y-%m-%d') AS date,
+             e.tipo AS type,
+             e.titulo AS title,
+             e.descripcion AS description,
+             e.hora_inicio AS startTime,
+             e.hora_fin AS endTime,
+             e.ubicacion AS location,
+             e.meet_link AS meet,
+             e.drive_link AS drive,
+             e.maps_link AS maps,
+             'propio' AS ownership,
+             NULL AS senderName
+        FROM evento e
+       WHERE e.codigo_usuario_fk = ?
+
+      UNION
+
+      SELECT e.codigo_evento,
+             DATE_FORMAT(e.fec_inicio, '%Y-%m-%d') AS date,
+             e.tipo AS type,
+             e.titulo AS title,
+             e.descripcion AS description,
+             e.hora_inicio AS startTime,
+             e.hora_fin AS endTime,
+             e.ubicacion AS location,
+             e.meet_link AS meet,
+             e.drive_link AS drive,
+             e.maps_link AS maps,
+             'compartido' AS ownership,
+             CONCAT(u.nom, ' ', u.apes) AS senderName
+        FROM evento e
+        JOIN evento_participante ep ON e.codigo_evento = ep.codigo_evento
+        JOIN usuario u ON e.codigo_usuario_fk = u.codigo_usuario
        WHERE ep.codigo_usuario = ?
     `;
 
@@ -38,41 +141,97 @@ router.get("/", async (req, res) => {
     res.status(500).json({ msg: "Error cargando eventos" });
   }
 });
-// POST: Crear evento con opción de compartir
+
 router.post("/", async (req, res) => {
   try {
-    const userId = req.headers['x-user-id'];
-    const { date, type, title, description, startTime, endTime, location, sharedWithEmail } = req.body; // [NUEVO] sharedWithEmail
+    const userId = req.headers["x-user-id"];
+    const {
+      date,
+      type,
+      title,
+      description,
+      startTime,
+      endTime,
+      location,
+      meet,
+      drive,
+      maps,
+      sharedWithEmail
+    } = req.body;
     const code = `E${Date.now()}`;
-    const io = req.app.get('io'); // Obtener instancia de socket
+    const io = req.app.get("io");
 
-    // 1. Insertar evento
     await db.promise().query(
-      `INSERT INTO evento (codigo_evento, codigo_usuario_fk, fec_inicio, tipo, titulo, descripcion, hora_inicio, hora_fin, ubicacion) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [code, userId, date, type, title, description, startTime, endTime, location]
+      `INSERT INTO evento
+        (codigo_evento, codigo_usuario_fk, fec_inicio, tipo, titulo, descripcion, hora_inicio, hora_fin, ubicacion, meet_link, drive_link, maps_link)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [code, userId, date, type, title, description, startTime, endTime, location, meet, drive, maps]
     );
 
-    // 2. Si hay email para compartir, buscar usuario y vincular
-    if (sharedWithEmail) {
-        const [users] = await db.promise().query("SELECT codigo_usuario FROM usuario WHERE correo = ?", [sharedWithEmail]);
-        
-        if (users.length > 0) {
-            const guestId = users[0].codigo_usuario;
-            // Insertar en tabla intermedia
-            await db.promise().query("INSERT INTO evento_participante (codigo_evento, codigo_usuario) VALUES (?, ?)", [code, guestId]);
+    try {
+      await createGoogleCalendarEvent(userId, {
+        date,
+        startTime,
+        endTime,
+        title,
+        description,
+        location,
+        meet,
+        drive,
+        maps
+      });
+    } catch (err) {
+      console.error("Error creando evento en Google Calendar:", err);
+    }
 
-            // [REAL-TIME] Enviar notificación al usuario invitado
-            // Enviamos el evento completo para que el frontend lo pinte sin recargar
-            io.to(guestId).emit("nuevo_evento_compartido", {
-                codigo_evento: code,
-                title,
-                date,
-                type,
-                description,
-                ownership: 'compartido'
-            });
+    if (sharedWithEmail) {
+      const [users] = await db
+        .promise()
+        .query("SELECT codigo_usuario FROM usuario WHERE correo = ?", [sharedWithEmail]);
+
+      if (users.length > 0) {
+        const guestId = users[0].codigo_usuario;
+        await db
+          .promise()
+          .query("INSERT INTO evento_participante (codigo_evento, codigo_usuario) VALUES (?, ?)", [code, guestId]);
+
+        const [owners] = await db
+          .promise()
+          .query("SELECT nom, apes FROM usuario WHERE codigo_usuario = ?", [userId]);
+        const ownerName = owners.length ? `${owners[0].nom} ${owners[0].apes}` : null;
+
+        io.to(guestId).emit("nuevo_evento_compartido", {
+          codigo_evento: code,
+          title,
+          date,
+          type,
+          description,
+          startTime,
+          endTime,
+          location,
+          meet,
+          drive,
+          maps,
+          ownership: "compartido",
+          senderName: ownerName
+        });
+
+        try {
+          await createGoogleCalendarEvent(guestId, {
+            date,
+            startTime,
+            endTime,
+            title,
+            description,
+            location,
+            meet,
+            drive,
+            maps
+          });
+        } catch (err) {
+          console.error("Error creando evento en Google Calendar para invitado:", err);
         }
+      }
     }
 
     res.status(201).json({ codigo_evento: code, ...req.body });
@@ -85,13 +244,13 @@ router.post("/", async (req, res) => {
 router.put("/:codigo_evento", async (req, res) => {
   try {
     const { codigo_evento } = req.params;
-    const { date, type, title, description, startTime, endTime, location } = req.body;
+    const { date, type, title, description, startTime, endTime, location, meet, drive, maps } = req.body;
 
     const [result] = await db.promise().query(
-      `UPDATE evento 
-       SET fec_inicio = ?, tipo = ?, titulo = ?, descripcion = ?, hora_inicio = ?, hora_fin = ?, ubicacion = ? 
+      `UPDATE evento
+       SET fec_inicio = ?, tipo = ?, titulo = ?, descripcion = ?, hora_inicio = ?, hora_fin = ?, ubicacion = ?, meet_link = ?, drive_link = ?, maps_link = ?
        WHERE codigo_evento = ?`,
-      [date, type, title, description, startTime, endTime, location, codigo_evento]
+      [date, type, title, description, startTime, endTime, location, meet, drive, maps, codigo_evento]
     );
 
     if (result.affectedRows === 0) {
@@ -104,49 +263,45 @@ router.put("/:codigo_evento", async (req, res) => {
     res.status(500).json({ msg: "Error en el servidor al actualizar" });
   }
 });
-// DELETE: Borrar evento y notificar en tiempo real
+
 router.delete("/:codigo_evento", async (req, res) => {
   try {
     const { codigo_evento } = req.params;
-    const userId = req.headers['x-user-id']; // Quien está borrando
-    const io = req.app.get('io');
+    const userId = req.headers["x-user-id"];
+    const io = req.app.get("io");
 
-    // 1. Antes de borrar, averiguamos quién más está involucrado para avisarle
-    // Buscamos si el evento tiene participantes
     const [participants] = await db.promise().query(
-        "SELECT codigo_usuario FROM evento_participante WHERE codigo_evento = ?", 
-        [codigo_evento]
-    );
-    
-    // Buscamos quién es el dueño
-    const [eventData] = await db.promise().query(
-        "SELECT codigo_usuario_fk FROM evento WHERE codigo_evento = ?",
-        [codigo_evento]
+      "SELECT codigo_usuario FROM evento_participante WHERE codigo_evento = ?",
+      [codigo_evento]
     );
 
-    if (eventData.length === 0) return res.status(404).json({ msg: "No encontrado" });
+    const [eventData] = await db.promise().query(
+      "SELECT codigo_usuario_fk FROM evento WHERE codigo_evento = ?",
+      [codigo_evento]
+    );
+
+    if (eventData.length === 0) {
+      return res.status(404).json({ msg: "No encontrado" });
+    }
 
     const ownerId = eventData[0].codigo_usuario_fk;
 
-    // 2. Ejecutamos el borrado (La base de datos limpiará los participantes por CASCADE)
-    // Permitimos borrar si eres el dueño O si eres participante (según tu petición)
     const [result] = await db.promise().query(
-        `DELETE FROM evento 
-         WHERE codigo_evento = ? AND (codigo_usuario_fk = ? OR codigo_evento IN (SELECT codigo_evento FROM evento_participante WHERE codigo_usuario = ?))`, 
-        [codigo_evento, userId, userId]
+      `DELETE FROM evento
+       WHERE codigo_evento = ? AND (codigo_usuario_fk = ? OR codigo_evento IN (SELECT codigo_evento FROM evento_participante WHERE codigo_usuario = ?))`,
+      [codigo_evento, userId, userId]
     );
-    
-    if (result.affectedRows === 0) return res.status(404).json({ msg: "No se pudo borrar o no tienes permiso" });
 
-    // 3. NOTIFICACIÓN REAL-TIME
-    // Si borró el dueño -> Avisar a los participantes
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ msg: "No se pudo borrar o no tienes permiso" });
+    }
+
     if (userId === ownerId) {
-        participants.forEach(p => {
-            io.to(p.codigo_usuario).emit("evento_eliminado", codigo_evento);
-        });
+      participants.forEach((p) => {
+        io.to(p.codigo_usuario).emit("evento_eliminado", codigo_evento);
+      });
     } else {
-        // Si borró un participante -> Avisar al dueño (y a otros participantes si hubiera)
-        io.to(ownerId).emit("evento_eliminado", codigo_evento);
+      io.to(ownerId).emit("evento_eliminado", codigo_evento);
     }
 
     res.json({ msg: "Eliminado correctamente" });

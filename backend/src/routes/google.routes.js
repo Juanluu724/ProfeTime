@@ -55,11 +55,21 @@ router.post("/meet", async (req, res) => {
     const calendar = google.calendar({ version: "v3", auth: authClient });
     const start = startTime || "09:00";
     const end = endTime || "10:00";
+    const startDateTime = new Date(`${date}T${start}:00`);
+    let endDateTime = new Date(`${date}T${end}:00`);
+    if (Number.isNaN(startDateTime.getTime()) || Number.isNaN(endDateTime.getTime())) {
+      return res.status(400).json({ msg: "Fecha u hora invalida." });
+    }
+    if (endDateTime <= startDateTime) {
+      endDateTime.setDate(endDateTime.getDate() + 1);
+    }
+    const endDate = endDateTime.toISOString().slice(0, 10);
+    const endTimeFinal = endDateTime.toISOString().slice(11, 19);
 
     const event = {
       summary: title || "Evento",
       start: { dateTime: `${date}T${start}:00`, timeZone: "Europe/Madrid" },
-      end: { dateTime: `${date}T${end}:00`, timeZone: "Europe/Madrid" },
+      end: { dateTime: `${endDate}T${endTimeFinal}`, timeZone: "Europe/Madrid" },
       conferenceData: {
         createRequest: {
           requestId: `meet-${Date.now()}`,
@@ -126,6 +136,32 @@ router.post("/drive/folder", async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(500).json({ msg: "Error creando carpeta en Drive." });
+  }
+});
+
+router.get("/picker-token", async (req, res) => {
+  try {
+    const userId = req.headers["x-user-id"];
+    if (!userId) {
+      return res.status(401).json({ msg: "No autorizado. Falta ID de usuario." });
+    }
+
+    const authClient = await getAuthClientForUser(userId);
+    if (!authClient) {
+      return res.status(403).json({ msg: "Cuenta no vinculada a Google." });
+    }
+
+    const accessTokenResponse = await authClient.getAccessToken();
+    const accessToken = accessTokenResponse?.token;
+
+    if (!accessToken) {
+      return res.status(500).json({ msg: "No se pudo obtener el token." });
+    }
+
+    return res.json({ accessToken });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ msg: "Error obteniendo token." });
   }
 });
 

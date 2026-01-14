@@ -1,10 +1,12 @@
 const mysql = require("mysql2");
 
+const dbName = process.env.DB_NAME || "profe_time_clean";
+
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: "",
-  database: "profe_time_db"
+  database: dbName
 });
 
 db.connect(err => {
@@ -12,7 +14,7 @@ db.connect(err => {
     console.error("Error al conectar a MySQL:", err);
   } else {
     console.log("Conectado a MySQL correctamente");
-    console.log("BASE DE DATOS ACTUAL: profe_time_clean");
+    console.log(`BASE DE DATOS ACTUAL: ${dbName}`);
   }
 });
 
@@ -33,6 +35,25 @@ db.query(
   (err) => {
     if (err) {
       console.error("Error creando tabla google_tokens:", err);
+    }
+  }
+);
+
+db.query(
+  `CREATE TABLE IF NOT EXISTS evento_participante (
+    codigo_evento VARCHAR(20) NOT NULL,
+    codigo_usuario VARCHAR(20) NOT NULL,
+    PRIMARY KEY (codigo_evento, codigo_usuario),
+    CONSTRAINT fk_evento_participante_evento
+      FOREIGN KEY (codigo_evento) REFERENCES evento(codigo_evento)
+      ON DELETE CASCADE,
+    CONSTRAINT fk_evento_participante_usuario
+      FOREIGN KEY (codigo_usuario) REFERENCES usuario(codigo_usuario)
+      ON DELETE CASCADE
+  )`,
+  (err) => {
+    if (err) {
+      console.error("Error creando tabla evento_participante:", err);
     }
   }
 );

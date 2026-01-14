@@ -13,7 +13,8 @@ const googleScopes = [
   "email",
   "profile",
   "https://www.googleapis.com/auth/calendar.events",
-  "https://www.googleapis.com/auth/drive.file"
+  "https://www.googleapis.com/auth/drive.file",
+  "https://www.googleapis.com/auth/drive.readonly"
 ];
 
 function createOAuthClient() {
@@ -31,7 +32,7 @@ router.post("/login", (req, res) => {
   console.log("BODY RECIBIDO:", correo, password);
 
   const sql = `
-    SELECT codigo_usuario, nom, apes, correo
+    SELECT codigo_usuario, nom, apes, correo, foto_url
     FROM usuario
     WHERE correo = ? AND password = ?
   `;
@@ -84,6 +85,7 @@ router.get("/google/callback", async (req, res) => {
     const oauth2 = google.oauth2({ version: "v2", auth: oauth2Client });
     const profile = await oauth2.userinfo.get();
     const email = (profile.data.email || "").toLowerCase();
+    const photoUrl = profile.data.picture || null;
 
     if (allowedDomain && !email.endsWith(`@${allowedDomain}`)) {
       return res.status(403).send("Domain not allowed.");
@@ -92,7 +94,7 @@ router.get("/google/callback", async (req, res) => {
     const [users] = await db
       .promise()
       .query(
-        "SELECT codigo_usuario, nom, apes, correo FROM usuario WHERE correo = ?",
+        "SELECT codigo_usuario, nom, apes, correo, foto_url FROM usuario WHERE correo = ?",
         [email]
       );
 
@@ -107,11 +109,16 @@ router.get("/google/callback", async (req, res) => {
       await db
         .promise()
         .query(
-          "INSERT INTO usuario (codigo_usuario, nom, apes, correo, password) VALUES (?, ?, ?, ?, ?)",
-          [codigoUsuario, nom, apes, email, ""]
+          "INSERT INTO usuario (codigo_usuario, nom, apes, correo, password, foto_url) VALUES (?, ?, ?, ?, ?, ?)",
+          [codigoUsuario, nom, apes, email, "", photoUrl]
         );
 
-      user = { codigo_usuario: codigoUsuario, nom, apes, correo: email };
+      user = { codigo_usuario: codigoUsuario, nom, apes, correo: email, foto_url: photoUrl };
+    } else if (!user.foto_url && photoUrl) {
+      await db
+        .promise()
+        .query("UPDATE usuario SET foto_url = ? WHERE codigo_usuario = ?", [photoUrl, user.codigo_usuario]);
+      user.foto_url = photoUrl;
     }
 
     await db

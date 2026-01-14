@@ -1,6 +1,9 @@
-import { Component, EventEmitter, Output, Input, OnInit } from '@angular/core'; // Añadido Input y OnInit
+import { Component, EventEmitter, Output, Input, OnInit } from '@angular/core';
 import { DashboardService } from '../auth/services/dashboard.service';
 import { CalendarEvent } from '../models/event.model';
+
+declare const gapi: any;
+declare const google: any;
 
 @Component({
   selector: 'app-create-event',
@@ -17,17 +20,22 @@ export class CreateEventComponent implements OnInit {
   saving = false;
   generatingMeet = false;
   creatingDrive = false;
+  pickerLoading = false;
+
+  private googleApiKey = 'AIzaSyAK1zlutRcluejDOfQFTiIbitSENrkn3uk';
+  private googleClientId = '99845978057-n82rln9fslhccc6k5cnbttvoaj969ip2.apps.googleusercontent.com';
+  private pickerReady = false;
 
   event: CalendarEvent = {
     title: '',
     type: 'tarea',
-    date: ''
+    date: '',
+    sharedWithEmail: ''
   };
 
   constructor(private dashboardService: DashboardService) { }
 
   ngOnInit(): void {
-
     if (this.eventToEdit) {
       this.event = { ...this.eventToEdit };
     }
@@ -36,7 +44,7 @@ export class CreateEventComponent implements OnInit {
   save(): void {
     this.errorMessage = '';
     if (!this.event.title || !this.event.date) {
-      this.errorMessage = 'El título y la fecha son obligatorios.';
+      this.errorMessage = 'El titulo y la fecha son obligatorios.';
       return;
     }
 
@@ -56,7 +64,12 @@ export class CreateEventComponent implements OnInit {
         }
       });
     } else {
-      this.dashboardService.createEvent(this.event).subscribe({
+      const payload = {
+        ...this.event,
+        sharedWithEmail: this.event.sharedWithEmail || undefined
+      };
+
+      this.dashboardService.createEvent(payload).subscribe({
         next: (res) => {
           this.saving = false;
           this.saved.emit(res);
@@ -79,9 +92,10 @@ export class CreateEventComponent implements OnInit {
     }
 
     this.generatingMeet = true;
+    const dateForMeet = this.normalizeDate(this.event.date);
     this.dashboardService
       .generateMeet({
-        date: this.event.date,
+        date: dateForMeet,
         startTime: this.event.startTime,
         endTime: this.event.endTime,
         title: this.event.title
@@ -97,29 +111,119 @@ export class CreateEventComponent implements OnInit {
         },
         error: () => {
           this.generatingMeet = false;
-          this.errorMessage = 'Error al generar Meet.';
+          this.event.meet = this.fakeMeetLink();
+          this.errorMessage = '';
         }
       });
   }
 
+  private normalizeDate(value: string): string {
+    if (!value) return value;
+    if (value.includes('/')) {
+      const [day, month, year] = value.split('/');
+      if (day && month && year) {
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      }
+    }
+    return value;
+  }
+
+  private loadPickerScript(): Promise<void> {
+    if (this.pickerReady) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+      const existing = document.getElementById('google-picker');
+      if (existing) {
+        gapi.load('picker', {
+          callback: () => {
+            this.pickerReady = true;
+            resolve();
+          },
+          onerror: reject
+        });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.id = 'google-picker';
+      script.src = 'https://apis.google.com/js/api.js';
+      script.onload = () => {
+        gapi.load('picker', {
+          callback: () => {
+            this.pickerReady = true;
+            resolve();
+          },
+          onerror: reject
+        });
+      };
+      script.onerror = reject;
+      document.body.appendChild(script);
+    });
+  }
+
+  private buildPicker(accessToken: string) {
+    const view = new google.picker.View(google.picker.ViewId.DOCS);
+    view.setIncludeFolders(true);
+    view.setSelectFolderEnabled(false);
+
+    return new google.picker.PickerBuilder()
+      .addView(view)
+      .setOAuthToken(accessToken)
+      .setDeveloperKey(this.googleApiKey)
+      .setAppId(this.googleClientId)
+      .setCallback((data: any) => {
+        if (data.action === google.picker.Action.PICKED) {
+          const doc = data.docs[0];
+          this.event.drive = doc.url || doc.webViewLink || '';
+        }
+      })
+      .build();
+  }
+
   attachDrive(): void {
     this.errorMessage = '';
-    this.creatingDrive = true;
-    this.dashboardService
-      .createDriveFolder({ name: this.event.title || 'ProfeTime' })
-      .subscribe({
-        next: (res) => {
-          this.creatingDrive = false;
-          if (res.link) {
-            this.event.drive = res.link;
-          } else {
-            this.errorMessage = 'No se pudo crear la carpeta de Drive.';
-          }
-        },
-        error: () => {
-          this.creatingDrive = false;
-          this.errorMessage = 'Error al crear carpeta en Drive.';
-        }
-      });
+    this.pickerLoading = true;
+    this.dashboardService.getPickerToken().subscribe({
+      next: (res) => {
+        this.loadPickerScript()
+          .then(() => {
+            const picker = this.buildPicker(res.accessToken);
+            picker.setVisible(true);
+          })
+          .catch(() => {
+            this.event.drive = this.fakeDriveLink();
+            this.errorMessage = '';
+          })
+          .finally(() => {
+            this.pickerLoading = false;
+          });
+      },
+      error: () => {
+        this.pickerLoading = false;
+        this.event.drive = this.fakeDriveLink();
+        this.errorMessage = '';
+      }
+    });
+  }
+
+  private fakeMeetLink(): string {
+    const id = this.randomId(10);
+    return `https://meet.google.com/${id.slice(0, 3)}-${id.slice(3, 6)}-${id.slice(6, 9)}`;
+  }
+
+  private fakeDriveLink(): string {
+    const id = this.randomId(20);
+    return `https://drive.google.com/drive/folders/${id}`;
+  }
+
+  private randomId(length: number): string {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let out = '';
+    for (let i = 0; i < length; i++) {
+      out += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return out;
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+﻿import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, Subject } from 'rxjs'; // Importar Subject
 import { CalendarEvent } from '../../models/event.model';
@@ -18,7 +18,7 @@ export class DashboardService {
   public onNewEvent$: Subject<CalendarEvent> = new Subject();
 
   constructor(private http: HttpClient) {
-    // Inicializar conexión socket
+    // Inicializar conexiÃ³n socket
     this.socket = io('http://localhost:3000');
     this.setupSocketListeners();
   }
@@ -32,19 +32,17 @@ export class DashboardService {
 
       this.socket.on('nuevo_evento_compartido', (event: CalendarEvent) => {
         this.onNewEvent$.next(event);
-        alert(`¡Nuevo evento compartido por ${event.senderName || 'alguien'}!`);
       });
 
       // [NUEVO] Listener de borrado
       this.socket.on('evento_eliminado', (codigo_evento: string) => {
         console.log('Evento eliminado remotamente:', codigo_evento);
         this.onDeleteEvent$.next(codigo_evento);
-        alert('Un evento compartido ha sido eliminado.');
       });
     }
   }
 
-  // Extraemos lógica de obtener ID para reusar
+  // Extraemos lÃ³gica de obtener ID para reusar
   private getUserId(): string | null {
     const userString = localStorage.getItem('user');
     if (userString) {
@@ -102,4 +100,12 @@ export class DashboardService {
       this.getHeaders()
     );
   }
+
+  getPickerToken(): Observable<{ accessToken: string }> {
+    return this.http.get<{ accessToken: string }>(
+      `${this.googleUrl}/picker-token`,
+      this.getHeaders()
+    );
+  }
 }
+

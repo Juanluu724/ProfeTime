@@ -69,7 +69,7 @@
             <label>Google Drive</label>
             <div class="grid-2 small">
                 <input placeholder="https://drive.google.com/..." [(ngModel)]="event.drive" />
-                <button class="secondary" type="button" (click)="attachDrive()" [disabled]="creatingDrive">Adjuntar</button>
+                <button class="secondary" type="button" (click)="attachDrive()" [disabled]="pickerLoading">Adjuntar</button>
             </div>
 
         </section>

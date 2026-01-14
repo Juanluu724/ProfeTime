@@ -1,4 +1,4 @@
-<div class="layout">
+﻿<div class="layout">
   <aside class="sidebar">
     <div class="brand">
       <img class="brand-logo" src="assets/logo.jpg" alt="ProfeTime" />
@@ -73,6 +73,27 @@
     </nav>
 
     <app-notifications [data]="notifications"></app-notifications>
+
+    <div class="account-chip" *ngIf="correoUsuario || fotoUsuario">
+      <div class="account-avatar">
+        <img *ngIf="fotoUsuario" [src]="fotoUsuario" alt="Cuenta Google" />
+        <span *ngIf="!fotoUsuario">G</span>
+      </div>
+      <div class="account-info">
+        <div class="account-label">Cuenta Google</div>
+        <div class="account-email">{{ correoUsuario }}</div>
+      </div>
+    </div>
+
+    <button class="logout-sidebar" (click)="logout()" title="Cerrar sesion">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+        <polyline points="16 17 21 12 16 7"></polyline>
+        <line x1="21" y1="12" x2="9" y2="12"></line>
+      </svg>
+      <span>Salir</span>
+    </button>
   </aside>
 
   <main class="content">
@@ -87,19 +108,13 @@
       </div>
 
       <div class="user-profile" *ngIf="nombreUsuario">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
+        <img *ngIf="fotoUsuario" [src]="fotoUsuario" alt="Usuario" class="user-photo" />
+        <svg *ngIf="!fotoUsuario" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
         </svg>
         <span>Hola, <strong>{{ nombreUsuario | titlecase }}</strong></span>
-
-        <button class="logout-btn" (click)="logout()" title="Cerrar sesión">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                <polyline points="16 17 21 12 16 7"></polyline>
-                <line x1="21" y1="12" x2="9" y2="12"></line>
-            </svg>
-        </button>
       </div>
       <div class="legend" *ngIf="activeSection === 'calendar'">
         <span class="dot red"></span> Examenes
@@ -151,9 +166,23 @@
               <span>{{ formatDateLabel(event.date) }}</span>
 
               <span *ngIf="event.startTime" style="margin-left: 8px; color: #4b5563;">
-                • {{ formatTimeRange(event.startTime, event.endTime) }}
+                â€¢ {{ formatTimeRange(event.startTime, event.endTime) }}
               </span>
             </div>
+            <div class="list-meta" *ngIf="event.location">{{ event.location }}</div>
+            <div class="list-meta" *ngIf="event.senderName && event.ownership === 'compartido'">
+              Compartido por {{ event.senderName }}
+            </div>
+            <div class="list-meta" *ngIf="event.meet">
+              Meet: <a class="list-link" [href]="event.meet" target="_blank" rel="noopener">Abrir</a>
+            </div>
+            <div class="list-meta" *ngIf="event.drive">
+              Drive: <a class="list-link" [href]="event.drive" target="_blank" rel="noopener">Abrir</a>
+            </div>
+            <div class="list-meta" *ngIf="event.maps">
+              Maps: <a class="list-link" [href]="event.maps" target="_blank" rel="noopener">Abrir</a>
+            </div>
+            <div class="list-desc" *ngIf="event.description">{{ event.description }}</div>
           </div>
 
 
@@ -171,3 +200,5 @@
 <app-create-event *ngIf="showCreateEvent" [eventToEdit]="eventToEdit" (close)="closeCreateEvent()"
   (saved)="onEventSaved($event)">
 </app-create-event>
+
+

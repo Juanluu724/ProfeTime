@@ -1,9 +1,9 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+﻿import { Component, OnDestroy, OnInit } from '@angular/core';
 import { DashboardService } from '../auth/services/dashboard.service';
 import { AuthService } from '../auth/services/auth.service';
 import { Router } from '@angular/router';
 import { CalendarEvent } from '../models/event.model';
-import { Subscription } from 'rxjs';
+import { Subscription, forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
@@ -12,6 +12,8 @@ import { Subscription } from 'rxjs';
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   nombreUsuario: string = '';
+  fotoUsuario: string = '';
+  correoUsuario: string = '';
   currentDate = new Date();
   monthYearDisplay = '';
   weekDays = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
@@ -38,38 +40,42 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   constructor(
     private dashboardService: DashboardService,
-    // 2. INYECCIÓN AÑADIDA
+    // 2. INYECCIÃ“N AÃ‘ADIDA
     private authService: AuthService,
     private router: Router
   ) { }
 
   ngOnInit(): void {
-    // 3. LÓGICA PARA OBTENER EL NOMBRE
+    // 3. LÃ“GICA PARA OBTENER EL NOMBRE
     this.authService.user$.subscribe(user => {
       if (user) {
         // Intenta coger 'nombre', si no 'email', si no pone 'Profe'
         this.nombreUsuario = user.nom || 'Profe';
+        this.fotoUsuario = user.foto_url || user.photoUrl || user.picture || '';
+        this.correoUsuario = user.correo || user.email || '';
       }
     });
 
     this.updateMonthTitle();
     this.loadDashboard();
 
-    // Suscripción a WebSockets
+    // SuscripciÃ³n a WebSockets
     this.socketSubscription = this.dashboardService.onNewEvent$.subscribe((newEvent: any) => {
       this.events.push({
         ...newEvent,
         date: newEvent.date
       });
 
-      if (newEvent.type) {
+      if (newEvent.type && newEvent.ownership !== 'compartido') {
         this.incrementMenuCount(newEvent.type);
       }
       this.generateCalendar();
+      this.notifications = this.buildNotifications(this.events);
 
       this.deleteSubscription = this.dashboardService.onDeleteEvent$.subscribe((idEliminado) => {
         this.events = this.events.filter(e => e.codigo_evento !== idEliminado);
         this.generateCalendar();
+        this.notifications = this.buildNotifications(this.events);
         this.loadDashboard();
       });
     });
@@ -85,23 +91,35 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   loadDashboard(): void {
-    this.dashboardService.getDashboard().subscribe((data: any) => {
-      this.menuCounts = data.menuCounts || { examenes: 0, tareas: 0, reuniones: 0, otros: 0 };
-      const rawEvents = data.calendarEvents || [];
+    forkJoin({
+      dashboard: this.dashboardService.getDashboard(),
+      events: this.dashboardService.getEvents()
+    }).subscribe(({ dashboard, events }) => {
+      this.menuCounts = dashboard.menuCounts || { examenes: 0, tareas: 0, reuniones: 0, otros: 0 };
+      const rawEvents = events || [];
 
       this.events = rawEvents.map((event: any) => ({
         ...event,
         date: event.date || event.fec_inicio,
-        title: event.title || event.titulo,
-        type: event.type || event.tipo || 'otro'
+        title: event.title || event.titulo || '',
+        description: event.description || event.descripcion || '',
+        type: event.type || event.tipo || 'otro',
+        startTime: event.startTime || event.hora_inicio || null,
+        endTime: event.endTime || event.hora_fin || null,
+        location: event.location || event.ubicacion || null,
+        meet: event.meet || event.meet_link || null,
+        drive: event.drive || event.drive_link || null,
+        maps: event.maps || event.maps_link || null,
+        ownership: event.ownership || 'propio',
+        senderName: event.senderName || null
       }));
 
+      this.notifications = this.buildNotifications(this.events);
       this.generateCalendar();
     }, (error) => {
-      console.error("⚠️ Error cargando el dashboard:", error);
+      console.error("Error cargando el dashboard:", error);
     });
   }
-
   generateCalendar(): void {
     this.daysInMonth = [];
 
@@ -112,7 +130,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const prevMonthDays = new Date(year, month, 0).getDate();
     const realToday = new Date();
 
-    // Días previos
+    // DÃ­as previos
     for (let i = 0; i < firstDay; i++) {
       const day = prevMonthDays - firstDay + 1 + i;
       this.daysInMonth.push({ day, isCurrentMonth: false, date: null, isToday: false, events: [] });
@@ -120,7 +138,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     const events = Array.isArray(this.events) ? this.events : [];
 
-    // Días del mes actual
+    // DÃ­as del mes actual
     for (let d = 1; d <= totalDays; d++) {
       const dateStr = `${year}-${this.pad(month + 1)}-${this.pad(d)}`;
       const dailyEvents = events.filter(e => this.normalizeDate(e.date) === dateStr);
@@ -139,7 +157,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
     }
 
-    // Días posteriores
+    // DÃ­as posteriores
     const totalCells = 42;
     const trailingDays = Math.max(totalCells - this.daysInMonth.length, 0);
     for (let i = 1; i <= trailingDays; i++) {
@@ -185,6 +203,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.events = [...this.events, event];
         this.incrementMenuCount(event.type || 'otro');
       }
+      this.notifications = this.buildNotifications(this.events);
       this.generateCalendar();
     }
     this.loadDashboard();
@@ -204,11 +223,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   eliminarEvento(event: CalendarEvent) {
     console.log('Intentando borrar evento:', event);
     if (!event.codigo_evento) {
-      alert("Error: El evento no tiene un código válido.");
+      alert("Error: El evento no tiene un cÃ³digo vÃ¡lido.");
       return;
     }
 
-    if (confirm(`¿Seguro que quieres eliminar "${event.title}"?`)) {
+    if (confirm(`Â¿Seguro que quieres eliminar "${event.title}"?`)) {
       this.dashboardService.deleteEvent(event.codigo_evento).subscribe({
         next: () => {
           this.events = this.events.filter(e => e.codigo_evento !== event.codigo_evento);
@@ -244,7 +263,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     return this.events
       .filter(event => event.type === targetType)
-      .filter(event => !this.selectedDate || this.normalizeDate(event.date) === this.selectedDate)
+        .filter(event => event.ownership !== 'compartido')
+        .filter(event => !this.selectedDate || this.normalizeDate(event.date) === this.selectedDate)
       .map(event => ({
         ...event,
         date: this.normalizeDate(event.date)
@@ -268,13 +288,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (type === 'otro') this.menuCounts.otros += 1;
   }
 
+  private buildNotifications(events: CalendarEvent[]): any[] {
+    const sorted = [...events].sort((a, b) => {
+      const aKey = `${this.normalizeDate(a.date)} ${a.startTime || ''}`;
+      const bKey = `${this.normalizeDate(b.date)} ${b.startTime || ''}`;
+      return bKey.localeCompare(aKey);
+    });
+
+    return sorted.slice(0, 5).map((event) => ({
+      type: event.type,
+      title: event.title || this.typeLabel(event.type),
+      time: `${this.formatDateLabel(event.date)}${event.startTime ? ' ' + event.startTime : ''}`,
+      badge: event.ownership === 'compartido' ? 'Compartido' : ''
+    }));
+  }
+
   onDaySelect(day: any): void {
     if (!day?.isCurrentMonth || !day?.date) {
       return;
     }
     this.selectedDate = this.normalizeDate(day.date);
 
-    // Si hay eventos en ese día, cambiamos a la sección del primer evento
+    // Si hay eventos en ese dÃ­a, cambiamos a la secciÃ³n del primer evento
     if (day.events && day.events.length > 0) {
       const firstType = day.events[0].type;
       const typeToSection: Record<string, 'examenes' | 'tareas' | 'reuniones'> = {
@@ -316,10 +351,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
   
   logout(): void {
-    // 1. Llamamos al servicio para borrar token (si tienes el método creado)
+    // 1. Llamamos al servicio para borrar token (si tienes el mÃ©todo creado)
     this.authService.logout(); 
     
     // 2. Redirigimos al login
     this.router.navigate(['/login']);
   }
 }
+
+

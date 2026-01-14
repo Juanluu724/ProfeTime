@@ -284,6 +284,16 @@
   color: #6b7280;
 }
 
+.list-link {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.list-link:hover {
+  text-decoration: underline;
+}
+
 .list-desc {
   margin-top: 4px;
   font-size: 12px;
@@ -490,6 +500,13 @@
       color: #6b7280;
     }
 
+    .user-photo {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
     strong {
       color: #111827;
       font-weight: 600;
@@ -520,4 +537,23 @@
   }
 
   /* --------------------------- */
+}
+.logout-sidebar {
+  margin-top: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  color: #111827;
+  cursor: pointer;
+}
+
+.logout-sidebar svg {
+  width: 22px;
+  height: 22px;
+  color: #2563eb;
 }
