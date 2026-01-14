@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Output, Input, OnInit } from '@angular/core';
 import { DashboardService } from '../auth/services/dashboard.service';
 import { CalendarEvent } from '../models/event.model';
+import { environment } from '../../environments/environment';
 
 declare const gapi: any;
 declare const google: any;
@@ -22,8 +23,8 @@ export class CreateEventComponent implements OnInit {
   creatingDrive = false;
   pickerLoading = false;
 
-  private googleApiKey = 'AIzaSyAK1zlutRcluejDOfQFTiIbitSENrkn3uk';
-  private googleClientId = '99845978057-n82rln9fslhccc6k5cnbttvoaj969ip2.apps.googleusercontent.com';
+  private googleApiKey = environment.googleApiKey;
+  private googleClientId = environment.googleClientId;
   private pickerReady = false;
 
   event: CalendarEvent = {
@@ -227,3 +228,4 @@ export class CreateEventComponent implements OnInit {
     return out;
   }
 }
+

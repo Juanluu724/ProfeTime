@@ -166,7 +166,7 @@
               <span>{{ formatDateLabel(event.date) }}</span>
 
               <span *ngIf="event.startTime" style="margin-left: 8px; color: #4b5563;">
-                â€¢ {{ formatTimeRange(event.startTime, event.endTime) }}
+                - {{ formatTimeRange(event.startTime, event.endTime) }}
               </span>
             </div>
             <div class="list-meta" *ngIf="event.location">{{ event.location }}</div>
