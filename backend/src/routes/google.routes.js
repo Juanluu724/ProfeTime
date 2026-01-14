@@ -35,6 +35,41 @@ async function getAuthClientForUser(userId) {
   return client;
 }
 
+function buildCalendarTimes(date, startTime, endTime) {
+  const normalizeTime = (value) => {
+    if (!value) return value;
+    const trimmed = String(value).trim();
+    if (trimmed.length >= 5) return trimmed.slice(0, 5);
+    return trimmed;
+  };
+  const pad = (value) => String(value).padStart(2, "0");
+
+  if (!startTime && !endTime) {
+    const start = { date };
+    const next = new Date(`${date}T00:00:00`);
+    next.setDate(next.getDate() + 1);
+    const end = { date: next.toISOString().slice(0, 10) };
+    return { start, end };
+  }
+
+  const startValue = normalizeTime(startTime) || "09:00";
+  const endValue = normalizeTime(endTime) || "10:00";
+  const startDateTime = new Date(`${date}T${startValue}:00`);
+  let endDateTime = new Date(`${date}T${endValue}:00`);
+  if (Number.isNaN(startDateTime.getTime()) || Number.isNaN(endDateTime.getTime())) {
+    return null;
+  }
+  if (endDateTime <= startDateTime) {
+    endDateTime.setDate(endDateTime.getDate() + 1);
+  }
+  const endDate = `${endDateTime.getFullYear()}-${pad(endDateTime.getMonth() + 1)}-${pad(endDateTime.getDate())}`;
+  const endTimeFinal = `${endValue}:00`;
+  return {
+    start: { dateTime: `${date}T${startValue}:00`, timeZone: "Europe/Madrid" },
+    end: { dateTime: `${endDate}T${endTimeFinal}`, timeZone: "Europe/Madrid" }
+  };
+}
+
 router.post("/meet", async (req, res) => {
   try {
     const userId = req.headers["x-user-id"];
@@ -52,31 +87,16 @@ router.post("/meet", async (req, res) => {
       return res.status(403).json({ msg: "Cuenta no vinculada a Google." });
     }
 
-    const normalizeTime = (value) => {
-      if (!value) return value;
-      const trimmed = String(value).trim();
-      if (trimmed.length >= 5) return trimmed.slice(0, 5);
-      return trimmed;
-    };
-
     const calendar = google.calendar({ version: "v3", auth: authClient });
-    const start = normalizeTime(startTime) || "09:00";
-    const end = normalizeTime(endTime) || "10:00";
-    const startDateTime = new Date(`${date}T${start}:00`);
-    let endDateTime = new Date(`${date}T${end}:00`);
-    if (Number.isNaN(startDateTime.getTime()) || Number.isNaN(endDateTime.getTime())) {
+    const times = buildCalendarTimes(date, startTime, endTime);
+    if (!times) {
       return res.status(400).json({ msg: "Fecha u hora invalida." });
     }
-    if (endDateTime <= startDateTime) {
-      endDateTime.setDate(endDateTime.getDate() + 1);
-    }
-    const endDate = endDateTime.toISOString().slice(0, 10);
-    const endTimeFinal = endDateTime.toISOString().slice(11, 19);
 
     const event = {
       summary: title || "Evento",
-      start: { dateTime: `${date}T${start}:00`, timeZone: "Europe/Madrid" },
-      end: { dateTime: `${endDate}T${endTimeFinal}`, timeZone: "Europe/Madrid" },
+      start: times.start,
+      end: times.end,
       conferenceData: {
         createRequest: {
           requestId: `meet-${Date.now()}`,

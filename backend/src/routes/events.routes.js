@@ -41,6 +41,7 @@ function buildCalendarTimes(date, startTime, endTime) {
     if (trimmed.length >= 5) return trimmed.slice(0, 5);
     return trimmed;
   };
+  const pad = (value) => String(value).padStart(2, "0");
 
   if (!startTime && !endTime) {
     const start = { date };
@@ -57,8 +58,8 @@ function buildCalendarTimes(date, startTime, endTime) {
   if (endDateTime <= startDateTime) {
     endDateTime.setDate(endDateTime.getDate() + 1);
   }
-  const endDate = endDateTime.toISOString().slice(0, 10);
-  const endTimeFinal = endDateTime.toISOString().slice(11, 19);
+  const endDate = `${endDateTime.getFullYear()}-${pad(endDateTime.getMonth() + 1)}-${pad(endDateTime.getDate())}`;
+  const endTimeFinal = `${endValue}:00`;
   return {
     start: { dateTime: `${date}T${startValue}:00`, timeZone: "Europe/Madrid" },
     end: { dateTime: `${endDate}T${endTimeFinal}`, timeZone: "Europe/Madrid" }

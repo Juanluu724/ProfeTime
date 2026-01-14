@@ -48,6 +48,10 @@ export class CreateEventComponent implements OnInit {
       this.errorMessage = 'El titulo y la fecha son obligatorios.';
       return;
     }
+    if (this.event.startTime && this.event.endTime && this.event.endTime < this.event.startTime) {
+      this.errorMessage = 'La hora de fin debe ser posterior a la de inicio.';
+      return;
+    }
 
     this.saving = true;
 
@@ -94,6 +98,10 @@ export class CreateEventComponent implements OnInit {
       this.errorMessage = 'La fecha es obligatoria para Meet.';
       return;
     }
+    if (this.event.startTime && this.event.endTime && this.event.endTime < this.event.startTime) {
+      this.errorMessage = 'La hora de fin debe ser posterior a la de inicio.';
+      return;
+    }
 
     this.generatingMeet = true;
     const dateForMeet = this.normalizeDate(this.event.date);
@@ -115,8 +123,7 @@ export class CreateEventComponent implements OnInit {
         },
         error: () => {
           this.generatingMeet = false;
-          this.event.meet = this.fakeMeetLink();
-          this.errorMessage = '';
+          this.errorMessage = 'No se pudo generar el enlace de Meet.';
         }
       });
   }
@@ -210,11 +217,6 @@ export class CreateEventComponent implements OnInit {
         this.errorMessage = '';
       }
     });
-  }
-
-  private fakeMeetLink(): string {
-    const id = this.randomId(10);
-    return `https://meet.google.com/${id.slice(0, 3)}-${id.slice(3, 6)}-${id.slice(6, 9)}`;
   }
 
   private fakeDriveLink(): string {
