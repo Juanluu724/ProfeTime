@@ -3,7 +3,7 @@ const { google } = require("googleapis");
 const router = express.Router();
 const db = require("../config/db");
 
-const allowedDomain = (process.env.ALLOWED_GOOGLE_DOMAIN || "campuscamara.es")
+const allowedDomain = (process.env.ALLOWED_GOOGLE_DOMAIN || "")
   .toLowerCase()
   .replace(/^@/, "");
 const frontendUrl = process.env.FRONTEND_URL || "http://localhost:4200";
@@ -63,7 +63,7 @@ router.get("/google", (req, res) => {
     access_type: "offline",
     prompt: "consent",
     scope: googleScopes,
-    hd: allowedDomain
+    ...(allowedDomain ? { hd: allowedDomain } : {})
   });
 
   return res.redirect(authUrl);
@@ -85,7 +85,7 @@ router.get("/google/callback", async (req, res) => {
     const profile = await oauth2.userinfo.get();
     const email = (profile.data.email || "").toLowerCase();
 
-    if (!email.endsWith(`@${allowedDomain}`)) {
+    if (allowedDomain && !email.endsWith(`@${allowedDomain}`)) {
       return res.status(403).send("Domain not allowed.");
     }
 
