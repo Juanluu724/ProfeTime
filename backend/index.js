@@ -1,11 +1,11 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const http = require("http"); 
-const { Server } = require("socket.io"); 
+const http = require("http");
+const { Server } = require("socket.io");
 
 const app = express();
-const server = http.createServer(app); 
+const server = http.createServer(app);
 
 // Configurar Socket.io con CORS
 const io = new Server(server, {
@@ -16,7 +16,7 @@ const io = new Server(server, {
 });
 
 // Guardar io en app para usarlo en las rutas
-app.set('io', io); 
+app.set('io', io);
 
 app.use(cors());
 app.use((req, res, next) => {
@@ -31,7 +31,7 @@ require("./src/config/db");
 
 app.use("/api/auth", require("./src/routes/auth.routes"));
 app.use("/api/dashboard", require("./src/routes/dashboard.routes"));
-app.use("/api/events", require("./src/routes/events.routes")); 
+app.use("/api/events", require("./src/routes/events.routes"));
 app.use("/api/google", require("./src/routes/google.routes"));
 
 // Escuchar conexiones de clientes
@@ -54,3 +54,4 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`>>> Servidor corriendo con Sockets en http://localhost:${PORT}`);
 });
+/*cooment*/
