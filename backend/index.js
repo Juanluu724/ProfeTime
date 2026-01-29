@@ -9,18 +9,31 @@ const app = express();
 app.set("trust proxy", 1);
 const server = http.createServer(app);
 
+function normalizeOrigin(value) {
+  if (!value) return "";
+  const trimmed = String(value).trim();
+  return trimmed.replace(/\/+$/, "").toLowerCase();
+}
+
 const configuredFrontendUrl = process.env.FRONTEND_URL || "http://localhost:4200";
+const allowedFrontendOrigins = new Set(
+  String(configuredFrontendUrl)
+    .split(",")
+    .map((s) => normalizeOrigin(s))
+    .filter(Boolean)
+);
 const isProduction = String(process.env.NODE_ENV || "").toLowerCase() === "production";
 
 function isAllowedOrigin(origin) {
   if (!origin) return true;
 
-  if (origin === configuredFrontendUrl) return true;
+  const normalized = normalizeOrigin(origin);
+  if (allowedFrontendOrigins.has(normalized)) return true;
 
   // Dev convenience: allow any localhost/127.0.0.1 origin (Angular dev server, Vite, etc.).
   if (!isProduction) {
-    if (/^http:\/\/localhost(:\d+)?$/i.test(origin)) return true;
-    if (/^http:\/\/127\.0\.0\.1(:\d+)?$/i.test(origin)) return true;
+    if (/^http:\/\/localhost(:\d+)?$/i.test(normalized)) return true;
+    if (/^http:\/\/127\.0\.0\.1(:\d+)?$/i.test(normalized)) return true;
   }
 
   return false;
@@ -31,7 +44,7 @@ const io = new Server(server, {
     cors: {
         origin: (origin, callback) => {
           if (isAllowedOrigin(origin)) return callback(null, true);
-          return callback(new Error("Not allowed by CORS"));
+          return callback(null, false);
         },
         methods: ["GET", "POST"]
     }
@@ -44,7 +57,8 @@ app.use(
   cors({
     origin: (origin, callback) => {
       if (isAllowedOrigin(origin)) return callback(null, true);
-      return callback(new Error("Not allowed by CORS"));
+      // Returning `false` avoids throwing and makes it easier to debug in browsers.
+      return callback(null, false);
     }
   })
 );
