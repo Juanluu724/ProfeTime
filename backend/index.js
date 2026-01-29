@@ -6,19 +6,33 @@ const http = require("http");
 const { Server } = require("socket.io");
 
 const app = express();
+app.set("trust proxy", 1);
 const server = http.createServer(app);
 
 const configuredFrontendUrl = process.env.FRONTEND_URL || "http://localhost:4200";
-const devFrontendUrl = "http://localhost:4200";
 const isProduction = String(process.env.NODE_ENV || "").toLowerCase() === "production";
-const allowedOrigins = Array.from(
-  new Set([configuredFrontendUrl, ...(isProduction ? [] : [devFrontendUrl])])
-);
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+
+  if (origin === configuredFrontendUrl) return true;
+
+  // Dev convenience: allow any localhost/127.0.0.1 origin (Angular dev server, Vite, etc.).
+  if (!isProduction) {
+    if (/^http:\/\/localhost(:\d+)?$/i.test(origin)) return true;
+    if (/^http:\/\/127\.0\.0\.1(:\d+)?$/i.test(origin)) return true;
+  }
+
+  return false;
+}
 
 // Configurar Socket.io con CORS
 const io = new Server(server, {
     cors: {
-        origin: allowedOrigins,
+        origin: (origin, callback) => {
+          if (isAllowedOrigin(origin)) return callback(null, true);
+          return callback(new Error("Not allowed by CORS"));
+        },
         methods: ["GET", "POST"]
     }
 });
@@ -29,8 +43,7 @@ app.set('io', io);
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (isAllowedOrigin(origin)) return callback(null, true);
       return callback(new Error("Not allowed by CORS"));
     }
   })

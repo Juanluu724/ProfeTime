@@ -114,6 +114,9 @@ function mapEventToResponse(data, ownership, senderName) {
     location: data.ubicacion,
     meet: data.meet_link,
     drive: data.drive_link,
+    driveFileId: data.drive_file_id || null,
+    driveFileName: data.drive_file_name || null,
+    driveMimeType: data.drive_mime_type || null,
     maps: data.maps_link,
     ownership,
     senderName: senderName || null
@@ -190,6 +193,9 @@ router.post("/", async (req, res) => {
       location,
       meet,
       drive,
+      driveFileId,
+      driveFileName,
+      driveMimeType,
       maps,
       sharedWithEmail
     } = req.body;
@@ -211,6 +217,9 @@ router.post("/", async (req, res) => {
       ubicacion: location || null,
       meet_link: meet || null,
       drive_link: drive || null,
+      drive_file_id: driveFileId || null,
+      drive_file_name: driveFileName || null,
+      drive_mime_type: driveMimeType || null,
       maps_link: maps || null,
       participantes: []
     };
@@ -272,6 +281,9 @@ router.post("/", async (req, res) => {
           location,
           meet,
           drive,
+          driveFileId,
+          driveFileName,
+          driveMimeType,
           maps,
           ownership: "compartido",
           senderName: ownerName
@@ -308,7 +320,21 @@ router.post("/", async (req, res) => {
 router.put("/:codigo_evento", async (req, res) => {
   try {
     const { codigo_evento } = req.params;
-    const { date, type, title, description, startTime, endTime, location, meet, drive, maps } =
+    const {
+      date,
+      type,
+      title,
+      description,
+      startTime,
+      endTime,
+      location,
+      meet,
+      drive,
+      driveFileId,
+      driveFileName,
+      driveMimeType,
+      maps
+    } =
       req.body;
 
     const eventRef = db.collection("events").doc(codigo_evento);
@@ -327,6 +353,9 @@ router.put("/:codigo_evento", async (req, res) => {
       ubicacion: location,
       meet_link: meet,
       drive_link: drive,
+      drive_file_id: driveFileId || null,
+      drive_file_name: driveFileName || null,
+      drive_mime_type: driveMimeType || null,
       maps_link: maps
     });
 

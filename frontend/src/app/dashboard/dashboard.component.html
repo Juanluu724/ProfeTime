@@ -86,7 +86,7 @@
       </button>
     </nav>
 
-    <app-notifications [data]="notifications"></app-notifications>
+    <app-notifications [data]="notifications" (dismiss)="requestDismissNotification($event)"></app-notifications>
 
     <div class="account-chip" *ngIf="correoUsuario || fotoUsuario">
       <div class="account-avatar">
@@ -100,7 +100,7 @@
     </div>
 
     <button class="btn-primary" type="button" (click)="linkGoogleApis()">
-      Vincular Calendar / Drive
+      {{ googleLinked ? 'Google vinculado ✅' : 'Vincular Calendar / Drive' }}
     </button>
 
     <button class="logout-sidebar" (click)="logout()" title="Cerrar sesion">
@@ -154,9 +154,18 @@
           <span class="day-number">{{ d.day }}</span>
 
           <div class="events-stack" *ngIf="d.events && d.events.length > 0">
-            <div *ngFor="let ev of d.events" class="event-pill" [ngClass]="ev.type">
+            <div *ngFor="let ev of (d.events | slice:0:2)" class="event-pill" [ngClass]="ev.type">
               {{ ev.title || typeLabel(ev.type) }}
             </div>
+            <button
+              *ngIf="d.events.length > 2"
+              type="button"
+              class="event-pill more"
+              (click)="$event.stopPropagation(); onDaySelect(d)"
+              title="Ver m\u00e1s"
+            >
+              +{{ d.events.length - 2 }} m\u00e1s
+            </button>
           </div>
 
         </div>
@@ -216,6 +225,31 @@
   </main>
 </div>
 
+
+<div class="confirm-overlay" *ngIf="pendingDelete">
+  <div class="confirm-card" role="dialog" aria-modal="true">
+    <h3>Eliminar evento</h3>
+    <p>
+      ¿Seguro que quieres eliminar
+      <strong>"{{ pendingDelete.title || 'este evento' }}"</strong>?
+    </p>
+    <div class="confirm-actions">
+      <button type="button" class="ghost-btn" (click)="cancelDelete()">Cancelar</button>
+      <button type="button" class="danger-btn" (click)="confirmDelete()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div class="confirm-overlay" *ngIf="pendingDismissNotification">
+  <div class="confirm-card" role="dialog" aria-modal="true">
+    <h3>Ocultar notificación</h3>
+    <p>¿Quieres ocultar esta notificación?</p>
+    <div class="confirm-actions">
+      <button type="button" class="ghost-btn" (click)="cancelDismissNotification()">Cancelar</button>
+      <button type="button" class="danger-btn" (click)="confirmDismissNotification()">Ocultar</button>
+    </div>
+  </div>
+</div>
 
 <app-create-event *ngIf="showCreateEvent" [eventToEdit]="eventToEdit" (close)="closeCreateEvent()"
   (saved)="onEventSaved($event)">

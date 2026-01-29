@@ -39,6 +39,7 @@
   background: #f8fafc;
   border: 1px solid #eef2f7;
   align-items: center;
+  position: relative;
 }
 
 .icon {
@@ -75,6 +76,25 @@
   padding: 4px 8px;
   border-radius: 999px;
   white-space: nowrap;
+}
+
+.dismiss {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid #eef2f7;
+  background: #ffffff;
+  color: #6b7280;
+  cursor: pointer;
+  line-height: 18px;
+  font-weight: 800;
+}
+
+.dismiss:hover {
+  background: #f3f4f6;
 }
 
 .card.type-examen .icon,

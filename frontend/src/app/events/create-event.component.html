@@ -35,12 +35,12 @@
 
             <div class="grid-2">
                 <div>
-                    <label>Hora de inicio *</label>
+                    <label>Hora de inicio</label>
                     <input type="time" [(ngModel)]="event.startTime" />
                 </div>
 
                 <div>
-                    <label>Hora de fin *</label>
+                    <label>Hora de fin</label>
                     <input type="time" [(ngModel)]="event.endTime" />
                 </div>
             </div>
@@ -70,6 +70,9 @@
             <div class="grid-2 small">
                 <input placeholder="https://drive.google.com/..." [(ngModel)]="event.drive" />
                 <button class="secondary" type="button" (click)="attachDrive()" [disabled]="pickerLoading">Adjuntar</button>
+            </div>
+            <div style="margin-top: 6px; font-size: 12px; color: #4b5563;" *ngIf="event.driveFileName">
+                Archivo: {{ event.driveFileName }}
             </div>
 
         </section>

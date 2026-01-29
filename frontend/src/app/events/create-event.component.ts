@@ -2,6 +2,7 @@ import { Component, EventEmitter, Output, Input, OnInit } from '@angular/core';
 import { DashboardService } from '../auth/services/dashboard.service';
 import { CalendarEvent } from '../models/event.model';
 import { environment } from '../../environments/environment';
+import { ToastService } from '../ui/toast.service';
 
 declare const gapi: any;
 declare const google: any;
@@ -34,7 +35,7 @@ export class CreateEventComponent implements OnInit {
     sharedWithEmail: ''
   };
 
-  constructor(private dashboardService: DashboardService) { }
+  constructor(private dashboardService: DashboardService, private toast: ToastService) { }
 
   ngOnInit(): void {
     if (this.eventToEdit) {
@@ -44,11 +45,17 @@ export class CreateEventComponent implements OnInit {
 
   save(): void {
     this.errorMessage = '';
-    if (!this.event.title || !this.event.date) {
-      this.errorMessage = 'El titulo y la fecha son obligatorios.';
+    if (!this.event.title || !this.event.type || !this.event.date) {
+      this.errorMessage = 'Titulo, tipo y fecha son obligatorios.';
       return;
     }
-    if (this.event.startTime && this.event.endTime && this.event.endTime < this.event.startTime) {
+    const hasStart = !!this.event.startTime;
+    const hasEnd = !!this.event.endTime;
+    if ((hasStart && !hasEnd) || (!hasStart && hasEnd)) {
+      this.errorMessage = 'Si indicas horas, debes poner inicio y fin.';
+      return;
+    }
+    if (hasStart && hasEnd && this.event.endTime! < this.event.startTime!) {
       this.errorMessage = 'La hora de fin debe ser posterior a la de inicio.';
       return;
     }
@@ -59,12 +66,14 @@ export class CreateEventComponent implements OnInit {
       this.dashboardService.updateEvent(this.event).subscribe({
         next: () => {
           this.saving = false;
+          this.toast.success('Evento actualizado.');
           this.saved.emit(this.event);
           this.close.emit();
         },
         error: (err) => {
           this.saving = false;
           this.errorMessage = 'Error al actualizar el evento.';
+          this.toast.error('No se pudo actualizar el evento.');
           console.error(err);
         }
       });
@@ -78,7 +87,11 @@ export class CreateEventComponent implements OnInit {
         next: (res) => {
           this.saving = false;
           if (res?.googleSync && res.googleSync.ok === false) {
-            alert('Evento guardado en ProfeTime, pero no en Google Calendar. Vuelve a iniciar sesion con Google.');
+            this.toast.warning(
+              'Evento guardado en ProfeTime, pero no en Google Calendar. Vuelve a vincular Google.'
+            );
+          } else {
+            this.toast.success('Evento creado.');
           }
           this.saved.emit(res);
           this.close.emit();
@@ -86,6 +99,7 @@ export class CreateEventComponent implements OnInit {
         error: (err) => {
           this.saving = false;
           this.errorMessage = 'Error al crear el evento.';
+          this.toast.error('No se pudo crear el evento.');
           console.error(err);
         }
       });
@@ -98,7 +112,13 @@ export class CreateEventComponent implements OnInit {
       this.errorMessage = 'La fecha es obligatoria para Meet.';
       return;
     }
-    if (this.event.startTime && this.event.endTime && this.event.endTime < this.event.startTime) {
+    const hasStart = !!this.event.startTime;
+    const hasEnd = !!this.event.endTime;
+    if ((hasStart && !hasEnd) || (!hasStart && hasEnd)) {
+      this.errorMessage = 'Si indicas horas, debes poner inicio y fin.';
+      return;
+    }
+    if (hasStart && hasEnd && this.event.endTime! < this.event.startTime!) {
       this.errorMessage = 'La hora de fin debe ser posterior a la de inicio.';
       return;
     }
@@ -188,6 +208,10 @@ export class CreateEventComponent implements OnInit {
         if (data.action === google.picker.Action.PICKED) {
           const doc = data.docs[0];
           this.event.drive = doc.url || doc.webViewLink || '';
+          this.event.driveFileId = doc.id || '';
+          this.event.driveFileName = doc.name || doc.title || '';
+          this.event.driveMimeType = doc.mimeType || doc.type || '';
+          this.toast.success('Archivo adjuntado.');
         }
       })
       .build();
@@ -204,8 +228,7 @@ export class CreateEventComponent implements OnInit {
             picker.setVisible(true);
           })
           .catch(() => {
-            this.event.drive = this.fakeDriveLink();
-            this.errorMessage = '';
+            this.toast.error('No se pudo abrir el selector de Drive.');
           })
           .finally(() => {
             this.pickerLoading = false;
@@ -213,24 +236,9 @@ export class CreateEventComponent implements OnInit {
       },
       error: () => {
         this.pickerLoading = false;
-        this.event.drive = this.fakeDriveLink();
-        this.errorMessage = '';
+        this.toast.warning('Vincula Google para poder usar Drive.');
       }
     });
-  }
-
-  private fakeDriveLink(): string {
-    const id = this.randomId(20);
-    return `https://drive.google.com/drive/folders/${id}`;
-  }
-
-  private randomId(length: number): string {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    let out = '';
-    for (let i = 0; i < length; i++) {
-      out += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return out;
   }
 }
 

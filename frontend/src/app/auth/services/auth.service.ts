@@ -52,16 +52,23 @@ export class AuthService {
     const provider = new GoogleAuthProvider();
 
     return from(signInWithPopup(this.auth, provider)).pipe(
-      switchMap((cred) => from(cred.user.getIdToken())),
-      switchMap((idToken) =>
-        this.http.post(
-          this.apiUrl,
-          {},
-          {
-            headers: new HttpHeaders({
-              Authorization: `Bearer ${idToken}`
-            })
-          }
+      switchMap((cred) =>
+        from(cred.user.getIdToken()).pipe(
+          switchMap((idToken) =>
+            this.http.post(
+              this.apiUrl,
+              {
+                email: cred.user.email || null,
+                name: cred.user.displayName || null,
+                photoUrl: cred.user.photoURL || null
+              },
+              {
+                headers: new HttpHeaders({
+                  Authorization: `Bearer ${idToken}`
+                })
+              }
+            )
+          )
         )
       ),
       tap((response: any) => {
@@ -85,4 +92,3 @@ export class AuthService {
     this.userSubject.next(null);
   }
 }
-

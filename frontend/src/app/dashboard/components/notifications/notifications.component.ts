@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 })
 export class NotificationsComponent {
   @Input() data: any[] = [];
+  @Output() dismiss = new EventEmitter<any>();
 
   // ASCII-only icon labels to avoid external icon fonts.
   getIcon(type: string): string {
@@ -26,5 +27,9 @@ export class NotificationsComponent {
   // CSS class for coloring by type.
   getStyleClass(type: string): string {
     return 'type-' + type;
+  }
+
+  onDismiss(item: any) {
+    this.dismiss.emit(item);
   }
 }

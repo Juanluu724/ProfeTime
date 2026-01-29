@@ -17,5 +17,9 @@
     </div>
 
     <div class="badge" *ngIf="item.badge">{{ item.badge }}</div>
+
+    <button class="dismiss" type="button" title="Ocultar" (click)="onDismiss(item); $event.stopPropagation()">
+      ×
+    </button>
   </div>
 </section>

@@ -85,5 +85,8 @@ export class DashboardService {
   getPickerToken(): Observable<{ accessToken: string }> {
     return this.http.get<{ accessToken: string }>(`${this.googleUrl}/picker-token`);
   }
-}
 
+  getGoogleStatus(): Observable<{ linked: boolean }> {
+    return this.http.get<{ linked: boolean }>(`${this.googleUrl}/status`);
+  }
+}

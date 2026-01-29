@@ -10,6 +10,7 @@ import { DashboardComponent } from './dashboard/dashboard.component';
 import { CreateEventComponent } from './events/create-event.component';
 import { NotificationsComponent } from './dashboard/components/notifications/notifications.component';
 import { AuthInterceptor } from './auth/auth.interceptor';
+import { ToastContainerComponent } from './ui/toast-container.component';
 
 @NgModule({
   declarations: [
@@ -23,7 +24,8 @@ import { AuthInterceptor } from './auth/auth.interceptor';
     AppRoutingModule,
     FormsModule,
     HttpClientModule,
-    NotificationsComponent
+    NotificationsComponent,
+    ToastContainerComponent
   ],
   providers: [
     {

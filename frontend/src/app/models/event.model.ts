@@ -12,8 +12,12 @@ export interface CalendarEvent {
   location?: string;
   meet?: string;
   drive?: string;
+  driveFileId?: string;
+  driveFileName?: string;
+  driveMimeType?: string;
   maps?: string;
   sharedWithEmail?: string;
-  ownership?: 'propio' | 'compartido'; // Para saber si es mío o me lo enviaron
+  ownership?: 'propio' | 'compartido';
   senderName?: string;
 }
+

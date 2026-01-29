@@ -26,6 +26,26 @@ function createOAuthClient() {
   );
 }
 
+function getRequestBaseUrl(req) {
+  const proto = req.protocol || "http";
+  const host = req.get("host");
+  return `${proto}://${host}`;
+}
+
+function createOAuthClientForRequest(req) {
+  const redirectUriFromEnv = process.env.GOOGLE_REDIRECT_URI;
+  const redirectUri =
+    redirectUriFromEnv && redirectUriFromEnv.trim()
+      ? redirectUriFromEnv
+      : `${getRequestBaseUrl(req)}/api/auth/google/callback`;
+
+  return new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    redirectUri
+  );
+}
+
 function splitName(fullName, fallbackEmail) {
   const full = (fullName || "").trim();
   if (full) {
@@ -75,7 +95,7 @@ async function ensureUserDocument(uid, email, name, photoUrl) {
   if (snapshot.exists) {
     const existing = snapshot.data();
     const updates = {};
-    if (!existing.foto_url && photoUrl) updates.foto_url = photoUrl;
+    if (photoUrl && photoUrl !== existing.foto_url) updates.foto_url = photoUrl;
     if (!existing.correo && lowerEmail) updates.correo = lowerEmail;
     if (Object.keys(updates).length) {
       await userRef.set(updates, { merge: true });
@@ -103,11 +123,15 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ msg: "No autorizado. Falta token." });
     }
 
+    const email = req.body?.email || decoded.email || "";
+    const name = req.body?.name || decoded.name || "";
+    const photoUrl = req.body?.photoUrl || decoded.picture || null;
+
     const user = await ensureUserDocument(
       decoded.uid,
-      decoded.email || "",
-      decoded.name || "",
-      decoded.picture || null
+      email,
+      name,
+      photoUrl
     );
 
     return res.status(200).json({ msg: "Login correcto", user });
@@ -138,7 +162,7 @@ router.get("/google", async (req, res) => {
       return res.status(401).json({ msg: "No autorizado. Falta token." });
     }
 
-    const oauth2Client = createOAuthClient();
+    const oauth2Client = createOAuthClientForRequest(req);
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: "offline",
       prompt: "consent",
@@ -164,7 +188,7 @@ router.get("/google/callback", async (req, res) => {
       return res.status(400).send("Missing state.");
     }
 
-    const oauth2Client = createOAuthClient();
+    const oauth2Client = createOAuthClientForRequest(req);
     const tokenResponse = await oauth2Client.getToken(code);
     const tokens = tokenResponse.tokens || {};
     oauth2Client.setCredentials(tokens);
@@ -198,7 +222,10 @@ router.get("/google/callback", async (req, res) => {
       );
 
     const payload = Buffer.from(JSON.stringify(user)).toString("base64");
-    return res.redirect(`${frontendUrl}/login?auth=${encodeURIComponent(payload)}`);
+    const joiner = frontendUrl.includes("?") ? "&" : "?";
+    return res.redirect(
+      `${frontendUrl}/login${joiner}auth=${encodeURIComponent(payload)}&linked=1`
+    );
   } catch (err) {
     console.error(err);
     return res.status(500).send("Google auth failed.");

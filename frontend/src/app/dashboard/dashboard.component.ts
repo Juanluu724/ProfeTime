@@ -1,9 +1,18 @@
 ﻿import { Component, OnDestroy, OnInit } from '@angular/core';
 import { DashboardService } from '../auth/services/dashboard.service';
 import { AuthService } from '../auth/services/auth.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CalendarEvent } from '../models/event.model';
 import { Subscription, forkJoin } from 'rxjs';
+import { ToastService } from '../ui/toast.service';
+
+interface CalendarDayCell {
+  day: number;
+  isCurrentMonth: boolean;
+  date: string | null;
+  isToday: boolean;
+  events: CalendarEvent[];
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -22,14 +31,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
   socketSubscription?: Subscription;
   deleteSubscription?: Subscription;
 
-  daysInMonth: any[] = [];
+  daysInMonth: CalendarDayCell[] = [];
   events: CalendarEvent[] = [];
 
   notifications: any[] = [];
+  pendingDismissNotification: any | null = null;
+  dismissedNotificationIds = new Set<string>();
   selectedDate: string | null = null;
 
   showCreateEvent = false;
   eventToEdit?: CalendarEvent;
+  pendingDelete: CalendarEvent | null = null;
+  googleLinked = false;
 
   menuCounts = {
     examenes: 0,
@@ -42,6 +55,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private dashboardService: DashboardService,
     // 2. INYECCIÃ“N AÃ‘ADIDA
     private authService: AuthService,
+    private toast: ToastService,
+    private route: ActivatedRoute,
     private router: Router
   ) { }
 
@@ -58,26 +73,56 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     this.updateMonthTitle();
     this.loadDashboard();
+    this.refreshGoogleStatus();
+
+    const linked = this.route.snapshot.queryParamMap.get('linked');
+    if (linked === '1') {
+      this.toast.success('Cuenta de Google vinculada.');
+      this.router.navigate([], { queryParams: { linked: null }, queryParamsHandling: 'merge' });
+      this.refreshGoogleStatus();
+    }
 
     // SuscripciÃ³n a WebSockets
-    this.socketSubscription = this.dashboardService.onNewEvent$.subscribe((newEvent: any) => {
-      this.events.push({
-        ...newEvent,
-        date: newEvent.date
-      });
+    this.socketSubscription = this.dashboardService.onNewEvent$.subscribe((incoming: any) => {
+      const id = incoming?.codigo_evento;
+      if (!id) return;
 
-      if (newEvent.type && newEvent.ownership !== 'compartido') {
-        this.incrementMenuCount(newEvent.type);
+      const normalized: CalendarEvent = {
+        ...incoming,
+        codigo_evento: id,
+        date: incoming.date || incoming.fec_inicio,
+        title: incoming.title || incoming.titulo || '',
+        description: incoming.description || incoming.descripcion || '',
+        type: incoming.type || incoming.tipo || 'otro',
+        startTime: incoming.startTime || incoming.hora_inicio || null,
+        endTime: incoming.endTime || incoming.hora_fin || null,
+        location: incoming.location || incoming.ubicacion || null,
+        meet: incoming.meet || incoming.meet_link || null,
+        drive: incoming.drive || incoming.drive_link || null,
+        driveFileId: incoming.driveFileId || incoming.drive_file_id || null,
+        driveFileName: incoming.driveFileName || incoming.drive_file_name || null,
+        driveMimeType: incoming.driveMimeType || incoming.drive_mime_type || null,
+        maps: incoming.maps || incoming.maps_link || null,
+        ownership: incoming.ownership || 'compartido',
+        senderName: incoming.senderName || null
+      };
+
+      const existingIndex = this.events.findIndex((e) => e.codigo_evento === id);
+      if (existingIndex >= 0) {
+        this.events[existingIndex] = { ...this.events[existingIndex], ...normalized };
+      } else {
+        this.events.push(normalized);
       }
+
       this.generateCalendar();
       this.notifications = this.buildNotifications(this.events);
+    });
 
-      this.deleteSubscription = this.dashboardService.onDeleteEvent$.subscribe((idEliminado) => {
-        this.events = this.events.filter(e => e.codigo_evento !== idEliminado);
-        this.generateCalendar();
-        this.notifications = this.buildNotifications(this.events);
-        this.loadDashboard();
-      });
+    this.deleteSubscription = this.dashboardService.onDeleteEvent$.subscribe((idEliminado) => {
+      this.events = this.events.filter(e => e.codigo_evento !== idEliminado);
+      this.generateCalendar();
+      this.notifications = this.buildNotifications(this.events);
+      this.loadDashboard();
     });
   }
 
@@ -109,6 +154,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
         location: event.location || event.ubicacion || null,
         meet: event.meet || event.meet_link || null,
         drive: event.drive || event.drive_link || null,
+        driveFileId: event.driveFileId || event.drive_file_id || null,
+        driveFileName: event.driveFileName || event.drive_file_name || null,
+        driveMimeType: event.driveMimeType || event.drive_mime_type || null,
         maps: event.maps || event.maps_link || null,
         ownership: event.ownership || 'propio',
         senderName: event.senderName || null
@@ -195,17 +243,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   onEventSaved(event?: CalendarEvent): void {
     this.showCreateEvent = false;
-    if (event?.date) {
-      const exists = this.events.find(e => e.codigo_evento === event.codigo_evento);
-      if (exists) {
-        this.events = this.events.map(e => e.codigo_evento === event.codigo_evento ? event : e);
-      } else {
-        this.events = [...this.events, event];
-        this.incrementMenuCount(event.type || 'otro');
-      }
-      this.notifications = this.buildNotifications(this.events);
-      this.generateCalendar();
-    }
     this.loadDashboard();
   }
 
@@ -221,24 +258,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   eliminarEvento(event: CalendarEvent) {
-    console.log('Intentando borrar evento:', event);
     if (!event.codigo_evento) {
-      alert("Error: El evento no tiene un cÃ³digo vÃ¡lido.");
+      this.toast.error('Error: el evento no tiene un cÃ³digo vÃ¡lido.');
       return;
     }
-
-    if (confirm(`Â¿Seguro que quieres eliminar "${event.title}"?`)) {
-      this.dashboardService.deleteEvent(event.codigo_evento).subscribe({
-        next: () => {
-          this.events = this.events.filter(e => e.codigo_evento !== event.codigo_evento);
-          this.loadDashboard();
-        },
-        error: (err) => {
-          console.error(err);
-          alert('Error al eliminar en el servidor');
-        }
-      });
-    }
+    this.pendingDelete = event;
   }
 
   setSection(section: 'calendar' | 'examenes' | 'tareas' | 'reuniones' | 'otros' | 'compartidos'): void {
@@ -296,7 +320,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return bKey.localeCompare(aKey);
     });
 
-    return sorted.slice(0, 5).map((event) => ({
+    return sorted
+      .filter((event) => !event.codigo_evento || !this.dismissedNotificationIds.has(event.codigo_evento))
+      .slice(0, 5)
+      .map((event) => ({
+        id: event.codigo_evento || '',
       type: event.type,
       title: event.title || this.typeLabel(event.type),
       time: `${this.formatDateLabel(event.date)}${event.startTime ? ' ' + event.startTime : ''}`,
@@ -304,7 +332,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }));
   }
 
-  onDaySelect(day: any): void {
+  requestDismissNotification(item: any) {
+    this.pendingDismissNotification = item;
+  }
+
+  cancelDismissNotification() {
+    this.pendingDismissNotification = null;
+  }
+
+  confirmDismissNotification() {
+    const id = this.pendingDismissNotification?.id;
+    if (id) {
+      this.dismissedNotificationIds.add(id);
+    }
+    this.pendingDismissNotification = null;
+    this.notifications = this.notifications.filter((n) => n.id !== id);
+    this.toast.success('Notificación ocultada.');
+  }
+
+  onDaySelect(day: CalendarDayCell): void {
     if (!day?.isCurrentMonth || !day?.date) {
       return;
     }
@@ -365,8 +411,45 @@ export class DashboardComponent implements OnInit, OnDestroy {
       await this.authService.linkGoogleApis();
     } catch (err) {
       console.error(err);
-      alert('Primero inicia sesi\u00f3n con Google (Firebase).');
+      this.toast.warning('Primero inicia sesi\u00f3n con Google.');
     }
+  }
+
+  private refreshGoogleStatus(): void {
+    this.dashboardService.getGoogleStatus().subscribe({
+      next: (res) => {
+        this.googleLinked = !!res?.linked;
+      },
+      error: () => {
+        this.googleLinked = false;
+      }
+    });
+  }
+
+  cancelDelete(): void {
+    this.pendingDelete = null;
+  }
+
+  confirmDelete(): void {
+    const event = this.pendingDelete;
+    if (!event?.codigo_evento) {
+      this.pendingDelete = null;
+      return;
+    }
+
+    this.dashboardService.deleteEvent(event.codigo_evento).subscribe({
+      next: () => {
+        this.toast.success('Evento eliminado.');
+        this.events = this.events.filter(e => e.codigo_evento !== event.codigo_evento);
+        this.pendingDelete = null;
+        this.loadDashboard();
+      },
+      error: (err) => {
+        console.error(err);
+        this.toast.error('Error al eliminar el evento.');
+        this.pendingDelete = null;
+      }
+    });
   }
 }
 

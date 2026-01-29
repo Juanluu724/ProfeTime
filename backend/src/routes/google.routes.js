@@ -71,6 +71,17 @@ function buildCalendarTimes(date, startTime, endTime) {
 
 router.use(firebaseAuth);
 
+router.get("/status", async (req, res) => {
+  try {
+    const userId = req.userId;
+    const tokenSnap = await db.collection("google_tokens").doc(userId).get();
+    return res.json({ linked: tokenSnap.exists });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ msg: "Error obteniendo estado." });
+  }
+});
+
 router.post("/meet", async (req, res) => {
   try {
     const userId = req.userId;
