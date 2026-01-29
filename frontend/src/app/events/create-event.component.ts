@@ -195,6 +195,10 @@ export class CreateEventComponent implements OnInit {
   }
 
   private buildPicker(accessToken: string) {
+    if (!this.googleApiKey) {
+      throw new Error('Falta googleApiKey (APP_GOOGLE_API_KEY).');
+    }
+
     const view = new google.picker.View(google.picker.ViewId.DOCS);
     view.setIncludeFolders(true);
     view.setSelectFolderEnabled(false);
@@ -203,7 +207,7 @@ export class CreateEventComponent implements OnInit {
       .addView(view)
       .setOAuthToken(accessToken)
       .setDeveloperKey(this.googleApiKey)
-      .setAppId(this.googleClientId)
+      .setOrigin(window.location.origin)
       .setCallback((data: any) => {
         if (data.action === google.picker.Action.PICKED) {
           const doc = data.docs[0];
@@ -227,7 +231,8 @@ export class CreateEventComponent implements OnInit {
             const picker = this.buildPicker(res.accessToken);
             picker.setVisible(true);
           })
-          .catch(() => {
+          .catch((err) => {
+            console.error('Drive Picker error:', err);
             this.toast.error('No se pudo abrir el selector de Drive.');
           })
           .finally(() => {
