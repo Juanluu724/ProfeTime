@@ -1,45 +1,88 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject, tap } from 'rxjs'; // Importamos BehaviorSubject y tap
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { BehaviorSubject, Observable, from, switchMap, tap } from 'rxjs';
+import { environment } from '../../../environments/environment';
+import { FirebaseApp, getApps, initializeApp } from 'firebase/app';
+import { Auth, GoogleAuthProvider, getAuth, signInWithPopup, signOut } from 'firebase/auth';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-
-  private apiUrl = 'http://localhost:3000/api/auth/login';
+  private apiUrl = `${environment.apiBaseUrl}/api/auth/login`;
+  private linkGoogleUrl = `${environment.apiBaseUrl}/api/auth/google`;
 
   private userSubject = new BehaviorSubject<any>(this.getUserFromStorage());
-  
   public user$ = this.userSubject.asObservable();
 
-  constructor(private http: HttpClient) { }
+  private firebaseApp: FirebaseApp;
+  private auth: Auth;
 
-  // Método auxiliar para recuperar del almacenamiento local sin errores
+  constructor(private http: HttpClient) {
+    this.firebaseApp = this.initFirebaseApp();
+    this.auth = getAuth(this.firebaseApp);
+  }
+
   private getUserFromStorage(): any {
     const userJson = localStorage.getItem('profetime_user');
     return userJson ? JSON.parse(userJson) : null;
   }
 
-  login(correo: string, password: string): Observable<any> {
-    return this.http.post(this.apiUrl, { correo, password }).pipe(
-      tap((response: any) => {
-        
-        const userToSave = response.user || response.usuario || response;
+  private initFirebaseApp(): FirebaseApp {
+    const apps = getApps();
+    if (apps.length) return apps[0];
+    return initializeApp(environment.firebase);
+  }
 
-        if (userToSave) {
-          // a) Guardamos en el navegador (Persistencia)
-          localStorage.setItem('profetime_user', JSON.stringify(userToSave));
-          
-          // b) Avisamos a toda la app de que hay un nuevo usuario (Estado)
-          this.userSubject.next(userToSave);
-        }
+  async getIdToken(): Promise<string | null> {
+    const user = this.auth.currentUser;
+    if (!user) return null;
+    return user.getIdToken();
+  }
+
+  private saveUser(userToSave: any) {
+    if (!userToSave) return;
+    localStorage.setItem('profetime_user', JSON.stringify(userToSave));
+    localStorage.setItem('user', JSON.stringify(userToSave));
+    this.userSubject.next(userToSave);
+  }
+
+  // Login ONLY via Firebase Auth (Google provider).
+  loginWithFirebaseGoogle(): Observable<any> {
+    const provider = new GoogleAuthProvider();
+
+    return from(signInWithPopup(this.auth, provider)).pipe(
+      switchMap((cred) => from(cred.user.getIdToken())),
+      switchMap((idToken) =>
+        this.http.post(
+          this.apiUrl,
+          {},
+          {
+            headers: new HttpHeaders({
+              Authorization: `Bearer ${idToken}`
+            })
+          }
+        )
+      ),
+      tap((response: any) => {
+        const userToSave = response?.user || response?.usuario || response;
+        this.saveUser(userToSave);
       })
     );
   }
 
+  // Link Google APIs (Calendar/Drive/Meet) via backend OAuth flow.
+  async linkGoogleApis(): Promise<void> {
+    const token = await this.getIdToken();
+    if (!token) throw new Error('No Firebase session');
+    window.location.href = `${this.linkGoogleUrl}?token=${encodeURIComponent(token)}`;
+  }
+
   logout() {
+    signOut(this.auth).catch(() => undefined);
     localStorage.removeItem('profetime_user');
+    localStorage.removeItem('user');
     this.userSubject.next(null);
   }
 }
+

@@ -23,10 +23,9 @@ temp/
 .cache/
 
 # =========================
-# Environment files
+# Runtime environment (never commit real keys)
 # =========================
-src/environments/environment.ts
-src/environments/environment.prod.ts
+src/assets/env.js
 
 # =========================
 # Logs

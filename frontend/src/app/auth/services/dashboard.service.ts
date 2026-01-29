@@ -1,83 +1,72 @@
-﻿import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, Subject } from 'rxjs'; // Importar Subject
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, Subject } from 'rxjs';
+import { io, Socket } from 'socket.io-client';
 import { CalendarEvent } from '../../models/event.model';
-import { io, Socket } from 'socket.io-client'; // Importar socket
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DashboardService {
-
-  private dashboardUrl = 'http://localhost:3000/api/dashboard';
-  private eventsUrl = 'http://localhost:3000/api/events';
-  private googleUrl = 'http://localhost:3000/api/google';
+  private dashboardUrl = `${environment.apiBaseUrl}/api/dashboard`;
+  private eventsUrl = `${environment.apiBaseUrl}/api/events`;
+  private googleUrl = `${environment.apiBaseUrl}/api/google`;
 
   private socket: Socket;
-  // Un observable para que el componente se suscriba a eventos nuevos
+
   public onNewEvent$: Subject<CalendarEvent> = new Subject();
+  public onDeleteEvent$: Subject<string> = new Subject();
 
   constructor(private http: HttpClient) {
-    // Inicializar conexiÃ³n socket
-    this.socket = io('http://localhost:3000');
+    this.socket = io(environment.apiBaseUrl);
     this.setupSocketListeners();
   }
-  // Agrega un nuevo Subject para el borrado
-  public onDeleteEvent$: Subject<string> = new Subject();
 
   private setupSocketListeners() {
     const userId = this.getUserId();
-    if (userId) {
-      this.socket.emit('join_room', userId);
+    if (!userId) return;
 
-      this.socket.on('nuevo_evento_compartido', (event: CalendarEvent) => {
-        this.onNewEvent$.next(event);
-      });
+    this.socket.emit('join_room', userId);
 
-      // [NUEVO] Listener de borrado
-      this.socket.on('evento_eliminado', (codigo_evento: string) => {
-        console.log('Evento eliminado remotamente:', codigo_evento);
-        this.onDeleteEvent$.next(codigo_evento);
-      });
-    }
+    this.socket.on('nuevo_evento_compartido', (event: CalendarEvent) => {
+      this.onNewEvent$.next(event);
+    });
+
+    this.socket.on('evento_eliminado', (codigo_evento: string) => {
+      this.onDeleteEvent$.next(codigo_evento);
+    });
   }
 
-  // Extraemos lÃ³gica de obtener ID para reusar
   private getUserId(): string | null {
-    const userString = localStorage.getItem('user');
-    if (userString) {
-      try {
-        const userObject = JSON.parse(userString);
-        return userObject.codigo_usuario;
-      } catch (e) { return null; }
+    const userString = localStorage.getItem('profetime_user') || localStorage.getItem('user');
+    if (!userString) return null;
+    try {
+      const userObject = JSON.parse(userString);
+      return userObject.codigo_usuario || null;
+    } catch {
+      return null;
     }
-    return null;
-  }
-
-  private getHeaders() {
-    const userId = this.getUserId();
-    const headers = userId ? new HttpHeaders({ 'x-user-id': userId }) : new HttpHeaders();
-    return { headers: headers };
   }
 
   getDashboard(): Observable<any> {
-    return this.http.get(this.dashboardUrl, this.getHeaders());
+    return this.http.get(this.dashboardUrl);
   }
 
   getEvents(): Observable<CalendarEvent[]> {
-    return this.http.get<CalendarEvent[]>(this.eventsUrl, this.getHeaders());
+    return this.http.get<CalendarEvent[]>(this.eventsUrl);
   }
 
   createEvent(event: any): Observable<any> {
-    return this.http.post(this.eventsUrl, event, this.getHeaders());
+    return this.http.post(this.eventsUrl, event);
   }
 
   updateEvent(event: CalendarEvent): Observable<CalendarEvent> {
-    return this.http.put<CalendarEvent>(`${this.eventsUrl}/${event.codigo_evento}`, event, this.getHeaders());
+    return this.http.put<CalendarEvent>(`${this.eventsUrl}/${event.codigo_evento}`, event);
   }
 
   deleteEvent(codigo_evento: string): Observable<any> {
-    return this.http.delete(`${this.eventsUrl}/${codigo_evento}`, this.getHeaders());
+    return this.http.delete(`${this.eventsUrl}/${codigo_evento}`);
   }
 
   generateMeet(payload: {
@@ -86,26 +75,15 @@ export class DashboardService {
     endTime?: string;
     title?: string;
   }): Observable<{ meetLink?: string }> {
-    return this.http.post<{ meetLink?: string }>(
-      `${this.googleUrl}/meet`,
-      payload,
-      this.getHeaders()
-    );
+    return this.http.post<{ meetLink?: string }>(`${this.googleUrl}/meet`, payload);
   }
 
   createDriveFolder(payload: { name?: string }): Observable<{ link?: string }> {
-    return this.http.post<{ link?: string }>(
-      `${this.googleUrl}/drive/folder`,
-      payload,
-      this.getHeaders()
-    );
+    return this.http.post<{ link?: string }>(`${this.googleUrl}/drive/folder`, payload);
   }
 
   getPickerToken(): Observable<{ accessToken: string }> {
-    return this.http.get<{ accessToken: string }>(
-      `${this.googleUrl}/picker-token`,
-      this.getHeaders()
-    );
+    return this.http.get<{ accessToken: string }>(`${this.googleUrl}/picker-token`);
   }
 }
 

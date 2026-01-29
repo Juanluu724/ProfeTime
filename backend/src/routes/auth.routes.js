@@ -1,7 +1,8 @@
 const express = require("express");
 const { google } = require("googleapis");
+const { admin, db } = require("../config/firebase");
+
 const router = express.Router();
-const db = require("../config/db");
 
 const allowedDomain = (process.env.ALLOWED_GOOGLE_DOMAIN || "")
   .toLowerCase()
@@ -25,56 +26,142 @@ function createOAuthClient() {
   );
 }
 
-router.post("/login", (req, res) => {
+function splitName(fullName, fallbackEmail) {
+  const full = (fullName || "").trim();
+  if (full) {
+    const parts = full.split(" ").filter(Boolean);
+    const nom = parts.shift() || fallbackEmail.split("@")[0];
+    const apes = parts.join(" ");
+    return { nom, apes };
+  }
+  return { nom: fallbackEmail.split("@")[0], apes: "" };
+}
 
-  const { correo, password } = req.body;
+function getFirebaseTokenFromRequest(req) {
+  const authHeader = req.headers.authorization || "";
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  if (match) {
+    return match[1];
+  }
 
-  console.log("BODY RECIBIDO:", correo, password);
+  // Top-level navigations (window.location) can't set Authorization headers.
+  // Allow passing the Firebase idToken via query param for the Google-linking endpoint.
+  const tokenFromQuery = req.query?.token || req.query?.idToken;
+  if (typeof tokenFromQuery === "string" && tokenFromQuery.trim()) {
+    return tokenFromQuery.trim();
+  }
 
-  const sql = `
-    SELECT codigo_usuario, nom, apes, correo, foto_url
-    FROM usuario
-    WHERE correo = ? AND password = ?
-  `;
+  return null;
+}
 
-  db.query(sql, [correo, password], (err, rows) => {
-    if (err) {
-      console.error("Error en la consulta:", err);
-      return res.status(500).json({ msg: "Error interno del servidor" });
+async function verifyFirebaseTokenFromHeader(req) {
+  const token = getFirebaseTokenFromRequest(req);
+  if (!token) return null;
+  return admin.auth().verifyIdToken(token);
+}
+
+async function ensureUserDocument(uid, email, name, photoUrl) {
+  const usersRef = db.collection("users");
+  const userRef = usersRef.doc(uid);
+  const snapshot = await userRef.get();
+  const lowerEmail = (email || "").toLowerCase();
+
+  if (allowedDomain && lowerEmail && !lowerEmail.endsWith(`@${allowedDomain}`)) {
+    const err = new Error("Domain not allowed.");
+    err.code = "DOMAIN_NOT_ALLOWED";
+    throw err;
+  }
+
+  if (snapshot.exists) {
+    const existing = snapshot.data();
+    const updates = {};
+    if (!existing.foto_url && photoUrl) updates.foto_url = photoUrl;
+    if (!existing.correo && lowerEmail) updates.correo = lowerEmail;
+    if (Object.keys(updates).length) {
+      await userRef.set(updates, { merge: true });
+    }
+    return { ...existing, ...updates };
+  }
+
+  const { nom, apes } = splitName(name, lowerEmail || `user-${uid}`);
+  const user = {
+    codigo_usuario: uid,
+    nom,
+    apes,
+    correo: lowerEmail,
+    password: "",
+    foto_url: photoUrl || null
+  };
+  await userRef.set(user);
+  return user;
+}
+
+router.post("/login", async (req, res) => {
+  try {
+    const decoded = await verifyFirebaseTokenFromHeader(req);
+    if (!decoded) {
+      return res.status(401).json({ msg: "No autorizado. Falta token." });
     }
 
-    console.log("FILAS DEVUELTAS:", rows.length);
+    const user = await ensureUserDocument(
+      decoded.uid,
+      decoded.email || "",
+      decoded.name || "",
+      decoded.picture || null
+    );
 
-    if (rows.length === 0) {
-      return res.status(401).json({ msg: "Correo o contraseña incorrectos" });
+    return res.status(200).json({ msg: "Login correcto", user });
+  } catch (err) {
+    if (err.code === "DOMAIN_NOT_ALLOWED") {
+      return res.status(403).json({ msg: "Domain not allowed." });
     }
+    console.error("Error en login Firebase:", err);
 
-    const user = rows[0];
-
-    res.status(200).json({
-      msg: "Login correcto",
-      user
+    const isProduction =
+      String(process.env.NODE_ENV || "").toLowerCase() === "production";
+    return res.status(401).json({
+      msg: "Token invalido.",
+      ...(isProduction
+        ? {}
+        : {
+            code: err?.code || "unknown",
+            detail: err?.message || String(err)
+          })
     });
-  });
+  }
 });
 
-router.get("/google", (req, res) => {
-  const oauth2Client = createOAuthClient();
-  const authUrl = oauth2Client.generateAuthUrl({
-    access_type: "offline",
-    prompt: "consent",
-    scope: googleScopes,
-    ...(allowedDomain ? { hd: allowedDomain } : {})
-  });
+router.get("/google", async (req, res) => {
+  try {
+    const decoded = await verifyFirebaseTokenFromHeader(req);
+    if (!decoded) {
+      return res.status(401).json({ msg: "No autorizado. Falta token." });
+    }
 
-  return res.redirect(authUrl);
+    const oauth2Client = createOAuthClient();
+    const authUrl = oauth2Client.generateAuthUrl({
+      access_type: "offline",
+      prompt: "consent",
+      scope: googleScopes,
+      state: decoded.uid,
+      ...(allowedDomain ? { hd: allowedDomain } : {})
+    });
+
+    return res.redirect(authUrl);
+  } catch (err) {
+    console.error("Error iniciando OAuth:", err);
+    return res.status(500).json({ msg: "Error iniciando Google auth." });
+  }
 });
 
 router.get("/google/callback", async (req, res) => {
   try {
-    const { code } = req.query;
+    const { code, state } = req.query;
     if (!code) {
       return res.status(400).send("Missing code.");
+    }
+    if (!state) {
+      return res.status(400).send("Missing state.");
     }
 
     const oauth2Client = createOAuthClient();
@@ -87,60 +174,27 @@ router.get("/google/callback", async (req, res) => {
     const email = (profile.data.email || "").toLowerCase();
     const photoUrl = profile.data.picture || null;
 
-    if (allowedDomain && !email.endsWith(`@${allowedDomain}`)) {
-      return res.status(403).send("Domain not allowed.");
-    }
-
-    const [users] = await db
-      .promise()
-      .query(
-        "SELECT codigo_usuario, nom, apes, correo, foto_url FROM usuario WHERE correo = ?",
-        [email]
-      );
-
-    let user = users[0];
-    if (!user) {
-      const fullName = profile.data.name || "";
-      const nameParts = fullName.trim().split(" ").filter(Boolean);
-      const nom = nameParts.shift() || email.split("@")[0];
-      const apes = nameParts.join(" ");
-      const codigoUsuario = `U${Date.now()}`;
-
-      await db
-        .promise()
-        .query(
-          "INSERT INTO usuario (codigo_usuario, nom, apes, correo, password, foto_url) VALUES (?, ?, ?, ?, ?, ?)",
-          [codigoUsuario, nom, apes, email, "", photoUrl]
-        );
-
-      user = { codigo_usuario: codigoUsuario, nom, apes, correo: email, foto_url: photoUrl };
-    } else if (!user.foto_url && photoUrl) {
-      await db
-        .promise()
-        .query("UPDATE usuario SET foto_url = ? WHERE codigo_usuario = ?", [photoUrl, user.codigo_usuario]);
-      user.foto_url = photoUrl;
-    }
+    const user = await ensureUserDocument(
+      state,
+      email,
+      profile.data.name || "",
+      photoUrl
+    );
 
     await db
-      .promise()
-      .query(
-        `INSERT INTO google_tokens
-          (codigo_usuario, access_token, refresh_token, scope, token_type, expiry_date)
-         VALUES (?, ?, ?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE
-          access_token = VALUES(access_token),
-          refresh_token = COALESCE(VALUES(refresh_token), refresh_token),
-          scope = VALUES(scope),
-          token_type = VALUES(token_type),
-          expiry_date = VALUES(expiry_date)`,
-        [
-          user.codigo_usuario,
-          tokens.access_token || null,
-          tokens.refresh_token || null,
-          tokens.scope || null,
-          tokens.token_type || null,
-          tokens.expiry_date || null
-        ]
+      .collection("google_tokens")
+      .doc(user.codigo_usuario)
+      .set(
+        {
+          codigo_usuario: user.codigo_usuario,
+          access_token: tokens.access_token || null,
+          refresh_token: tokens.refresh_token || null,
+          scope: tokens.scope || null,
+          token_type: tokens.token_type || null,
+          expiry_date: tokens.expiry_date || null,
+          updated_at: admin.firestore.FieldValue.serverTimestamp()
+        },
+        { merge: true }
       );
 
     const payload = Buffer.from(JSON.stringify(user)).toString("base64");

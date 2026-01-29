@@ -69,3 +69,7 @@ coverage/
 .env.development
 .env.production
 .env.test
+
+# Firebase service account (never commit real keys)
+firebase-service-account.json
+*firebase-adminsdk*.json

@@ -1,16 +1,24 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const http = require("http");
 const { Server } = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
 
+const configuredFrontendUrl = process.env.FRONTEND_URL || "http://localhost:4200";
+const devFrontendUrl = "http://localhost:4200";
+const isProduction = String(process.env.NODE_ENV || "").toLowerCase() === "production";
+const allowedOrigins = Array.from(
+  new Set([configuredFrontendUrl, ...(isProduction ? [] : [devFrontendUrl])])
+);
+
 // Configurar Socket.io con CORS
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:4200",
+        origin: allowedOrigins,
         methods: ["GET", "POST"]
     }
 });
@@ -18,7 +26,15 @@ const io = new Server(server, {
 // Guardar io en app para usarlo en las rutas
 app.set('io', io);
 
-app.use(cors());
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
+    }
+  })
+);
 app.use((req, res, next) => {
     console.log(`Petición recibida: ${req.method} ${req.url}`);
     next();
@@ -27,12 +43,19 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-require("./src/config/db");
+require("./src/config/firebase");
 
 app.use("/api/auth", require("./src/routes/auth.routes"));
 app.use("/api/dashboard", require("./src/routes/dashboard.routes"));
 app.use("/api/events", require("./src/routes/events.routes"));
 app.use("/api/google", require("./src/routes/google.routes"));
+
+// Servir Angular (build) desde el mismo backend en Render
+const clientDist = path.join(__dirname, "../frontend/dist/frontend");
+app.use(express.static(clientDist));
+app.get(/^(?!\/api).*/, (req, res) => {
+    return res.sendFile(path.join(clientDist, "index.html"));
+});
 
 // Escuchar conexiones de clientes
 io.on("connection", (socket) => {

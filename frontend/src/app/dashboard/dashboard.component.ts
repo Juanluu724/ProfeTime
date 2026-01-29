@@ -359,6 +359,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // 2. Redirigimos al login
     this.router.navigate(['/login']);
   }
+
+  async linkGoogleApis(): Promise<void> {
+    try {
+      await this.authService.linkGoogleApis();
+    } catch (err) {
+      console.error(err);
+      alert('Primero inicia sesi\u00f3n con Google (Firebase).');
+    }
+  }
 }
 
 

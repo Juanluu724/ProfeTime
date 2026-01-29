@@ -7,44 +7,15 @@
   <div class="login-card">
     <h2>Iniciar Sesión</h2>
 
-    <!-- FORMULARIO CONECTADO -->
-    <form (ngSubmit)="onLogin()">
+    <button type="button" class="google-btn" (click)="loginWithGoogle()" [disabled]="loading">
+      {{ loading ? 'Conectando...' : 'Entrar con Google' }}
+    </button>
 
-      <input
-        type="email"
-        placeholder="Correo electrónico"
-        [(ngModel)]="correo"
-        name="correo"
-        required
-      />
-
-      <input
-        type="password"
-        placeholder="Contraseña"
-        [(ngModel)]="password"
-        name="password"
-        required
-      />
-
-      <button type="submit">
-        Iniciar Sesión
-      </button>
-
-      <!-- MENSAJE DEL LOGIN -->
-      <div *ngIf="mensaje" 
-          class="mensaje" 
-          [ngClass]="mensajeTipo">
-        {{ mensaje }}
-      </div>
-
-    </form>
-
-    <div class="oauth">
-      <div class="divider">o</div>
-      <button type="button" class="google-btn" (click)="loginWithGoogle()">
-        Iniciar con Google
-      </button>
+    <div *ngIf="mensaje" class="mensaje" [ngClass]="mensajeTipo">
+      {{ mensaje }}
     </div>
 
+    <p class="hint">El inicio de sesión usa Firebase Authentication (Google).</p>
   </div>
 </div>
+

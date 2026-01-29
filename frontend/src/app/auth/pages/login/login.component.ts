@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
-import { AuthService } from '../../services/auth.service';
 import { ActivatedRoute, Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -8,61 +8,53 @@ import { ActivatedRoute, Router } from '@angular/router';
   styleUrls: ['./login.component.scss']
 })
 export class LoginComponent implements OnInit {
-
-  correo: string = '';
-  password: string = '';
-
-  mensaje: string = '';
+  mensaje = '';
   mensajeTipo: 'success' | 'error' | '' = '';
+  loading = false;
 
   constructor(
     private authService: AuthService,
     private router: Router,
     private route: ActivatedRoute
-  ) { }
+  ) {}
 
   ngOnInit(): void {
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.subscribe((params) => {
       const authPayload = params['auth'];
-      if (!authPayload) {
-        return;
-      }
+      if (!authPayload) return;
 
+      // Return from Google APIs linking flow (/api/auth/google/callback).
       try {
         const decoded = JSON.parse(atob(authPayload));
-        localStorage.setItem("user", JSON.stringify(decoded));
-        localStorage.setItem("profetime_user", JSON.stringify(decoded));
+        localStorage.setItem('profetime_user', JSON.stringify(decoded));
+        localStorage.setItem('user', JSON.stringify(decoded));
+        this.mensaje = 'Cuenta de Google vinculada correctamente.';
+        this.mensajeTipo = 'success';
         this.router.navigate(['/dashboard']);
       } catch {
-        this.mensaje = "No se pudo completar el inicio con Google.";
-        this.mensajeTipo = "error";
+        this.mensaje = 'No se pudo completar el enlace con Google.';
+        this.mensajeTipo = 'error';
       }
     });
   }
 
-  onLogin() {
+  loginWithGoogle(): void {
     this.mensaje = '';
     this.mensajeTipo = '';
+    this.loading = true;
 
-    this.authService.login(this.correo, this.password).subscribe({
-      next: (res) => {
-        this.mensaje = "Usuario correcto";
-        this.mensajeTipo = "success";
-
-        localStorage.setItem("user", JSON.stringify(res.user));
-
-        setTimeout(() => {
-          this.router.navigate(['/dashboard']);
-        }, 800);
+    this.authService.loginWithFirebaseGoogle().subscribe({
+      next: () => {
+        this.loading = false;
+        this.router.navigate(['/dashboard']);
       },
-      error: () => {
-        this.mensaje = "Correo o contraseña incorrectos";
-        this.mensajeTipo = "error";
+      error: (err) => {
+        console.error(err);
+        this.loading = false;
+        this.mensaje = 'No se pudo iniciar sesión con Google.';
+        this.mensajeTipo = 'error';
       }
     });
   }
-
-  loginWithGoogle() {
-    window.location.href = "http://localhost:3000/api/auth/google";
-  }
 }
+

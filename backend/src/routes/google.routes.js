@@ -1,6 +1,7 @@
 const express = require("express");
 const { google } = require("googleapis");
-const db = require("../config/db");
+const { db } = require("../config/firebase");
+const firebaseAuth = require("../middleware/firebaseAuth");
 
 const router = express.Router();
 
@@ -13,16 +14,12 @@ function createOAuthClient() {
 }
 
 async function getAuthClientForUser(userId) {
-  const [rows] = await db.promise().query(
-    "SELECT access_token, refresh_token, scope, token_type, expiry_date FROM google_tokens WHERE codigo_usuario = ?",
-    [userId]
-  );
-
-  if (!rows.length) {
+  const tokenSnap = await db.collection("google_tokens").doc(userId).get();
+  if (!tokenSnap.exists) {
     return null;
   }
 
-  const tokenRow = rows[0];
+  const tokenRow = tokenSnap.data();
   const client = createOAuthClient();
   client.setCredentials({
     access_token: tokenRow.access_token,
@@ -62,7 +59,9 @@ function buildCalendarTimes(date, startTime, endTime) {
   if (endDateTime <= startDateTime) {
     endDateTime.setDate(endDateTime.getDate() + 1);
   }
-  const endDate = `${endDateTime.getFullYear()}-${pad(endDateTime.getMonth() + 1)}-${pad(endDateTime.getDate())}`;
+  const endDate = `${endDateTime.getFullYear()}-${pad(endDateTime.getMonth() + 1)}-${pad(
+    endDateTime.getDate()
+  )}`;
   const endTimeFinal = `${endValue}:00`;
   return {
     start: { dateTime: `${date}T${startValue}:00`, timeZone: "Europe/Madrid" },
@@ -70,12 +69,11 @@ function buildCalendarTimes(date, startTime, endTime) {
   };
 }
 
+router.use(firebaseAuth);
+
 router.post("/meet", async (req, res) => {
   try {
-    const userId = req.headers["x-user-id"];
-    if (!userId) {
-      return res.status(401).json({ msg: "No autorizado. Falta ID de usuario." });
-    }
+    const userId = req.userId;
 
     const { date, startTime, endTime, title } = req.body;
     if (!date) {
@@ -126,10 +124,7 @@ router.post("/meet", async (req, res) => {
 
 router.post("/drive/folder", async (req, res) => {
   try {
-    const userId = req.headers["x-user-id"];
-    if (!userId) {
-      return res.status(401).json({ msg: "No autorizado. Falta ID de usuario." });
-    }
+    const userId = req.userId;
 
     const authClient = await getAuthClientForUser(userId);
     if (!authClient) {
@@ -168,10 +163,7 @@ router.post("/drive/folder", async (req, res) => {
 
 router.get("/picker-token", async (req, res) => {
   try {
-    const userId = req.headers["x-user-id"];
-    if (!userId) {
-      return res.status(401).json({ msg: "No autorizado. Falta ID de usuario." });
-    }
+    const userId = req.userId;
 
     const authClient = await getAuthClientForUser(userId);
     if (!authClient) {
