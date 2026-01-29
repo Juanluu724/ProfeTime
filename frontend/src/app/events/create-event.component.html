@@ -1,104 +1,120 @@
 <div class="overlay">
-    <div class="modal">
+  <div class="modal">
+    <!-- HEADER -->
+    <header class="modal-header">
+      <h2>Crear Nuevo Evento</h2>
+      <button class="close-btn" type="button" (click)="close.emit()">&times;</button>
+    </header>
 
-        <!-- HEADER -->
-        <header class="modal-header">
-            <h2>Crear Nuevo Evento</h2>
-            <button class="close-btn" (click)="close.emit()">✕</button>
-        </header>
+    <!-- BODY -->
+    <section class="modal-body">
+      <h4>Informaci&oacute;n B&aacute;sica</h4>
 
-        <!-- BODY -->
-        <section class="modal-body">
+      <label>T&iacute;tulo del evento *</label>
+      <input
+        type="text"
+        placeholder="Ej: Examen de Matem&aacute;ticas - &Aacute;lgebra"
+        [(ngModel)]="event.title"
+      />
 
-            <h4>Información Básica</h4>
+      <div class="grid-2">
+        <div>
+          <label>Tipo de evento *</label>
+          <select [(ngModel)]="event.type">
+            <option value="examen">Examen</option>
+            <option value="tarea">Tarea</option>
+            <option value="reunion">Reuni&oacute;n</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
 
-            <label>Título del evento *</label>
-            <input type="text" placeholder="Ej: Examen de Matemáticas - Álgebra" [(ngModel)]="event.title" />
+        <div>
+          <label>Fecha *</label>
+          <input type="date" [(ngModel)]="event.date" />
+        </div>
+      </div>
 
-            <div class="grid-2">
-                <div>
-                    <label>Tipo de evento *</label>
+      <div class="grid-2">
+        <div>
+          <label>Hora de inicio</label>
+          <input type="time" [(ngModel)]="event.startTime" />
+        </div>
 
-                    <select [(ngModel)]="event.type">
-                        <option value="examen">Examen</option>
-                        <option value="tarea">Tarea</option>
-                        <option value="reunion">Reunión</option>
-                        <option value="otro">Otro</option>
-                    </select>
-                </div>
+        <div>
+          <label>Hora de fin</label>
+          <input type="time" [(ngModel)]="event.endTime" />
+        </div>
+      </div>
 
-                <div>
-                    <label>Fecha *</label>
-                    <input type="date" [(ngModel)]="event.date" />
-                </div>
-            </div>
+      <label>Compartir con</label>
+      <div class="share-input">
+        <div class="chips" *ngIf="sharedEmails.length > 0">
+          <span class="chip" *ngFor="let email of sharedEmails; let i = index">
+            {{ email }}
+            <button
+              type="button"
+              class="chip-remove"
+              (click)="removeSharedEmail(i)"
+              title="Quitar"
+            >
+              &times;
+            </button>
+          </span>
+        </div>
 
-            <div class="grid-2">
-                <div>
-                    <label>Hora de inicio</label>
-                    <input type="time" [(ngModel)]="event.startTime" />
-                </div>
+        <div class="share-row">
+          <input
+            type="email"
+            placeholder="Escribe un email y pulsa Enter"
+            [(ngModel)]="sharedEmailDraft"
+            (keydown)="onSharedEmailKeydown($event)"
+          />
+          <button class="secondary small-btn" type="button" (click)="addSharedEmail()">
+            A&ntilde;adir
+          </button>
+        </div>
 
-                <div>
-                    <label>Hora de fin</label>
-                    <input type="time" [(ngModel)]="event.endTime" />
-                </div>
-            </div>
+        <small class="hint">Puedes a&ntilde;adir varios correos (Enter o coma).</small>
+      </div>
 
-            <label>Compartir con</label>
-            <div class="share-input">
-                <div class="chips" *ngIf="sharedEmails.length > 0">
-                    <span class="chip" *ngFor="let email of sharedEmails; let i = index">
-                        {{ email }}
-                        <button type="button" class="chip-remove" (click)="removeSharedEmail(i)" title="Quitar">Ã—</button>
-                    </span>
-                </div>
-                <div class="share-row">
-                    <input
-                        type="email"
-                        placeholder="Escribe un email y pulsa Enter"
-                        [(ngModel)]="sharedEmailDraft"
-                        (keydown)="onSharedEmailKeydown($event)"
-                    />
-                    <button class="secondary small-btn" type="button" (click)="addSharedEmail()">AÃ±adir</button>
-                </div>
-                <small class="hint">Puedes aÃ±adir varios correos (Enter o coma).</small>
-            </div>
+      <label>Descripci&oacute;n</label>
+      <textarea
+        placeholder="Describe el evento, incluye detalles importantes..."
+        [(ngModel)]="event.description"
+      ></textarea>
 
-            <label>Descripción</label>
-            <textarea placeholder="Describe el evento, incluye detalles importantes..." [(ngModel)]="event.description">
-      </textarea>
+      <label>Ubicaci&oacute;n</label>
+      <input placeholder="Aula 302, Sala de profesores..." [(ngModel)]="event.location" />
 
-            <label>Ubicación</label>
-            <input placeholder="Aula 302, Sala de profesores..." [(ngModel)]="event.location" />
+      <hr />
 
-            <hr />
+      <h4>Integraciones Google</h4>
 
-            <h4>Integraciones Google</h4>
+      <label>Google Meet</label>
+      <div class="grid-2 small">
+        <input placeholder="https://meet.google.com/..." [(ngModel)]="event.meet" />
+        <button class="secondary" type="button" (click)="generateMeet()" [disabled]="generatingMeet">
+          Generar
+        </button>
+      </div>
 
-            <label>Google Meet</label>
-            <div class="grid-2 small">
-                <input placeholder="https://meet.google.com/..." [(ngModel)]="event.meet" />
-                <button class="secondary" type="button" (click)="generateMeet()" [disabled]="generatingMeet">Generar</button>
-            </div>
+      <label>Google Drive</label>
+      <div class="grid-2 small">
+        <input placeholder="https://drive.google.com/..." [(ngModel)]="event.drive" />
+        <button class="secondary" type="button" (click)="attachDrive()" [disabled]="pickerLoading">
+          Adjuntar
+        </button>
+      </div>
+      <div style="margin-top: 6px; font-size: 12px; color: #4b5563;" *ngIf="event.driveFileName">
+        Archivo: {{ event.driveFileName }}
+      </div>
+    </section>
 
-            <label>Google Drive</label>
-            <div class="grid-2 small">
-                <input placeholder="https://drive.google.com/..." [(ngModel)]="event.drive" />
-                <button class="secondary" type="button" (click)="attachDrive()" [disabled]="pickerLoading">Adjuntar</button>
-            </div>
-            <div style="margin-top: 6px; font-size: 12px; color: #4b5563;" *ngIf="event.driveFileName">
-                Archivo: {{ event.driveFileName }}
-            </div>
-
-        </section>
-
-        <!-- FOOTER -->
-        <footer class="modal-footer">
-            <span class="error" *ngIf="errorMessage">{{ errorMessage }}</span>
-            <button class="primary" (click)="save()" [disabled]="saving">Guardar evento</button>
-            <button class="cancel" (click)="close.emit()">Cancelar</button>
-        </footer>
-
-    </div>
+    <!-- FOOTER -->
+    <footer class="modal-footer">
+      <span class="error" *ngIf="errorMessage">{{ errorMessage }}</span>
+      <button class="primary" type="button" (click)="save()" [disabled]="saving">Guardar evento</button>
+      <button class="cancel" type="button" (click)="close.emit()">Cancelar</button>
+    </footer>
+  </div>
 </div>

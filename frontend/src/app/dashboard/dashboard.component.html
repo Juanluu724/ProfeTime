@@ -184,7 +184,12 @@
       <div class="list-empty" *ngIf="activeSection !== 'compartidos' && filteredEvents.length === 0">
         No hay eventos.
       </div>
-      <div class="list-card" *ngFor="let event of filteredEvents">
+      <div
+        class="list-card"
+        *ngFor="let event of filteredEvents"
+        [attr.id]="'event-' + event.codigo_evento"
+        [class.highlight]="event.codigo_evento && event.codigo_evento === highlightEventId"
+      >
         <div class="list-left">
           <span class="list-icon" [ngClass]="event.type">{{ typeLabel(event.type) | slice:0:1 }}</span>
           <div class="list-content">
@@ -211,7 +216,9 @@
               Meet: <a class="list-link" [href]="event.meet" target="_blank" rel="noopener">Abrir</a>
             </div>
             <div class="list-meta" *ngIf="event.drive">
-              Drive: <a class="list-link" [href]="event.drive" target="_blank" rel="noopener">Abrir</a>
+              Drive:
+              <a class="list-link" [href]="event.drive" target="_blank" rel="noopener">Abrir</a>
+              <span *ngIf="event.driveFileName"> ({{ event.driveFileName }})</span>
             </div>
             <div class="list-meta" *ngIf="event.maps">
               Maps: <a class="list-link" [href]="event.maps" target="_blank" rel="noopener">Abrir</a>

@@ -38,6 +38,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   pendingDismissNotification: any | null = null;
   dismissedNotificationIds = new Set<string>();
   selectedDate: string | null = null;
+  highlightEventId: string | null = null;
 
   showCreateEvent = false;
   eventToEdit?: CalendarEvent;
@@ -356,8 +357,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.activeSection = 'calendar';
     }
 
-    if (found) {
-      this.editarEvento(found);
+    this.highlightEventId = found?.codigo_evento || id || null;
+    const targetId = this.highlightEventId ? `event-${this.highlightEventId}` : null;
+    if (targetId) {
+      setTimeout(() => {
+        const el = document.getElementById(targetId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        setTimeout(() => {
+          if (this.highlightEventId === (found?.codigo_evento || id || null)) {
+            this.highlightEventId = null;
+          }
+        }, 3000);
+      }, 50);
     }
   }
 
