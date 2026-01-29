@@ -42,3 +42,13 @@ h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8; 
 }
+
+// Google Drive Picker: ensure it appears above our modals/overlays.
+// The Picker injects elements with these classes directly into <body>.
+.picker-dialog-bg {
+  z-index: 4000 !important;
+}
+
+.picker-dialog {
+  z-index: 4001 !important;
+}
