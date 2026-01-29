@@ -45,9 +45,25 @@
                 </div>
             </div>
 
-
-            <label>Compartir con (Email del usuario)</label>
-            <input type="email" placeholder="amigo@profetime.com" [(ngModel)]="event.sharedWithEmail" />
+            <label>Compartir con</label>
+            <div class="share-input">
+                <div class="chips" *ngIf="sharedEmails.length > 0">
+                    <span class="chip" *ngFor="let email of sharedEmails; let i = index">
+                        {{ email }}
+                        <button type="button" class="chip-remove" (click)="removeSharedEmail(i)" title="Quitar">Ã—</button>
+                    </span>
+                </div>
+                <div class="share-row">
+                    <input
+                        type="email"
+                        placeholder="Escribe un email y pulsa Enter"
+                        [(ngModel)]="sharedEmailDraft"
+                        (keydown)="onSharedEmailKeydown($event)"
+                    />
+                    <button class="secondary small-btn" type="button" (click)="addSharedEmail()">AÃ±adir</button>
+                </div>
+                <small class="hint">Puedes aÃ±adir varios correos (Enter o coma).</small>
+            </div>
 
             <label>Descripción</label>
             <textarea placeholder="Describe el evento, incluye detalles importantes..." [(ngModel)]="event.description">

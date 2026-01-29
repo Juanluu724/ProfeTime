@@ -86,7 +86,11 @@
       </button>
     </nav>
 
-    <app-notifications [data]="notifications" (dismiss)="requestDismissNotification($event)"></app-notifications>
+    <app-notifications
+      [data]="notifications"
+      (open)="openNotification($event)"
+      (dismiss)="requestDismissNotification($event)"
+    ></app-notifications>
 
     <div class="account-chip" *ngIf="correoUsuario || fotoUsuario">
       <div class="account-avatar">
@@ -99,8 +103,9 @@
       </div>
     </div>
 
-    <button class="btn-primary" type="button" (click)="linkGoogleApis()">
-      {{ googleLinked ? 'Google vinculado ✅' : 'Vincular Calendar / Drive' }}
+    <button class="btn-primary google-link-btn" type="button" (click)="linkGoogleApis()">
+      <span>Google Calendar / Drive</span>
+      <span class="link-status" [class.ok]="googleLinked">{{ googleLinked ? 'Conectado' : 'Conectar' }}</span>
     </button>
 
     <button class="logout-sidebar" (click)="logout()" title="Cerrar sesion">

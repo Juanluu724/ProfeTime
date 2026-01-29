@@ -10,7 +10,7 @@
 
 .modal {
     background: white;
-    width: 900px;
+    width: min(900px, 95vw);
     max-height: 90vh;
     border-radius: 12px;
     overflow-y: auto;
@@ -78,6 +78,61 @@ textarea {
     resize: vertical;
 }
 
+.share-input {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.share-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    font-size: 12px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.chip-remove {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-weight: 800;
+    color: #6b7280;
+    padding: 0;
+    line-height: 1;
+}
+
+.chip-remove:hover {
+    color: #111827;
+}
+
+.hint {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.small-btn {
+    padding: 8px 12px;
+}
+
 .grid-2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -140,4 +195,44 @@ hr {
 
 input, select, textarea {
     box-sizing: border-box; /* Para que el padding no rompa el ancho */
+}
+
+@media (max-width: 640px) {
+    .overlay {
+        align-items: stretch;
+    }
+
+    .modal {
+        width: 100vw;
+        max-height: 100vh;
+        border-radius: 0;
+    }
+
+    .modal-header {
+        padding: 16px 16px;
+    }
+
+    .modal-body {
+        padding: 16px 16px;
+    }
+
+    .grid-2 {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .grid-2.small {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .primary,
+    .cancel {
+        width: 100%;
+    }
 }

@@ -17,7 +17,7 @@ export interface CalendarEvent {
   driveMimeType?: string;
   maps?: string;
   sharedWithEmail?: string;
+  sharedWithEmails?: string[];
   ownership?: 'propio' | 'compartido';
   senderName?: string;
 }
-

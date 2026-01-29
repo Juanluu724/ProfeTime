@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 })
 export class NotificationsComponent {
   @Input() data: any[] = [];
+  @Output() open = new EventEmitter<any>();
   @Output() dismiss = new EventEmitter<any>();
 
   // ASCII-only icon labels to avoid external icon fonts.
@@ -31,5 +32,9 @@ export class NotificationsComponent {
 
   onDismiss(item: any) {
     this.dismiss.emit(item);
+  }
+
+  onOpen(item: any) {
+    this.open.emit(item);
   }
 }

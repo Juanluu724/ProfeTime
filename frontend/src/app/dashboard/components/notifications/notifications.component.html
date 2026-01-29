@@ -8,7 +8,15 @@
     No hay notificaciones
   </div>
 
-  <div *ngFor="let item of data" class="card" [ngClass]="getStyleClass(item.type)">
+  <div
+    *ngFor="let item of data"
+    class="card"
+    [ngClass]="getStyleClass(item.type)"
+    role="button"
+    tabindex="0"
+    (click)="onOpen(item)"
+    (keydown.enter)="onOpen(item)"
+  >
     <div class="icon">{{ getIcon(item.type) }}</div>
 
     <div class="content">

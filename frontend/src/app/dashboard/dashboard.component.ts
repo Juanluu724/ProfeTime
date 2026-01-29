@@ -325,11 +325,40 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .slice(0, 5)
       .map((event) => ({
         id: event.codigo_evento || '',
-      type: event.type,
-      title: event.title || this.typeLabel(event.type),
-      time: `${this.formatDateLabel(event.date)}${event.startTime ? ' ' + event.startTime : ''}`,
-      badge: event.ownership === 'compartido' ? 'Compartido' : ''
-    }));
+        type: event.type,
+        date: this.normalizeDate(event.date),
+        title: event.title || this.typeLabel(event.type),
+        time: `${this.formatDateLabel(event.date)}${event.startTime ? ' ' + event.startTime : ''}`,
+        badge: event.ownership === 'compartido' ? 'Compartido' : ''
+      }));
+  }
+
+  openNotification(item: any) {
+    const id = item?.id;
+    const found = id ? this.events.find((e) => e.codigo_evento === id) : undefined;
+    const type = (found?.type || item?.type) as CalendarEvent['type'] | undefined;
+    const date = found?.date || item?.date;
+
+    if (date) {
+      this.selectedDate = this.normalizeDate(date);
+    }
+
+    const typeToSection: Record<string, 'examenes' | 'tareas' | 'reuniones' | 'otros'> = {
+      examen: 'examenes',
+      tarea: 'tareas',
+      reunion: 'reuniones',
+      otro: 'otros'
+    };
+
+    if (type && typeToSection[type]) {
+      this.activeSection = typeToSection[type];
+    } else {
+      this.activeSection = 'calendar';
+    }
+
+    if (found) {
+      this.editarEvento(found);
+    }
   }
 
   requestDismissNotification(item: any) {

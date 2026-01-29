@@ -197,7 +197,8 @@ router.post("/", async (req, res) => {
       driveFileName,
       driveMimeType,
       maps,
-      sharedWithEmail
+      sharedWithEmail,
+      sharedWithEmails
     } = req.body;
     const code = `E${Date.now()}`;
     const io = req.app.get("io");
@@ -247,15 +248,36 @@ router.post("/", async (req, res) => {
       console.error("Error creando evento en Google Calendar:", err?.response?.data || err);
     }
 
-    if (sharedWithEmail) {
-      const normalizedEmail = String(sharedWithEmail).toLowerCase();
-      const guestQuery = await db
-        .collection("users")
-        .where("correo", "==", normalizedEmail)
-        .limit(1)
-        .get();
+    const toArray = (value) => (Array.isArray(value) ? value : []);
+    const rawEmails = [...toArray(sharedWithEmails), sharedWithEmail].filter(Boolean);
+    const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
+    const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
-      if (!guestQuery.empty) {
+    const uniqueEmails = Array.from(
+      new Set(rawEmails.map(normalizeEmail).filter((email) => isValidEmail(email)))
+    );
+
+    if (uniqueEmails.length > 0) {
+      const ownerDoc = await db.collection("users").doc(userId).get();
+      const ownerData = ownerDoc.exists ? ownerDoc.data() : null;
+      const ownerName = ownerData ? `${ownerData.nom} ${ownerData.apes}`.trim() : null;
+      const ownerEmail = ownerData?.correo ? normalizeEmail(ownerData.correo) : null;
+
+      for (const email of uniqueEmails) {
+        if (ownerEmail && email === ownerEmail) {
+          continue;
+        }
+
+        const guestQuery = await db
+          .collection("users")
+          .where("correo", "==", email)
+          .limit(1)
+          .get();
+
+        if (guestQuery.empty) {
+          continue;
+        }
+
         const guestDoc = guestQuery.docs[0];
         const guestId = guestDoc.id;
 
@@ -265,10 +287,6 @@ router.post("/", async (req, res) => {
           .update({
             participantes: admin.firestore.FieldValue.arrayUnion(guestId)
           });
-
-        const ownerDoc = await db.collection("users").doc(userId).get();
-        const ownerData = ownerDoc.exists ? ownerDoc.data() : null;
-        const ownerName = ownerData ? `${ownerData.nom} ${ownerData.apes}`.trim() : null;
 
         io.to(guestId).emit("nuevo_evento_compartido", {
           codigo_evento: code,

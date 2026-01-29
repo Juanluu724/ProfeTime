@@ -40,6 +40,27 @@
   font-weight: 600;
 }
 
+.google-link-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.link-status {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.link-status.ok {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
 .menu {
   display: flex;
   flex-direction: column;
@@ -672,4 +693,42 @@
 
 .danger-btn:hover {
   background: #fecaca;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 16px;
+  }
+
+  .menu {
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+  }
+
+  .menu .item {
+    flex: 0 0 auto;
+    min-width: 160px;
+  }
+
+  .content {
+    padding: 14px;
+  }
+
+  .calendar {
+    overflow-x: auto;
+  }
+
+  .week-header,
+  .calendar-grid {
+    min-width: 720px;
+  }
 }

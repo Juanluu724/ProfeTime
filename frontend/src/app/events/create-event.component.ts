@@ -28,6 +28,9 @@ export class CreateEventComponent implements OnInit {
   private googleClientId = environment.googleClientId;
   private pickerReady = false;
 
+  sharedEmailDraft = '';
+  sharedEmails: string[] = [];
+
   event: CalendarEvent = {
     title: '',
     type: 'tarea',
@@ -41,10 +44,28 @@ export class CreateEventComponent implements OnInit {
     if (this.eventToEdit) {
       this.event = { ...this.eventToEdit };
     }
+
+    const initial = (this.event.sharedWithEmails || []).length
+      ? this.event.sharedWithEmails || []
+      : this.event.sharedWithEmail
+        ? String(this.event.sharedWithEmail).split(/[,\s]+/g)
+        : [];
+
+    this.sharedEmails = Array.from(
+      new Set(
+        initial
+          .map((v) => this.normalizeEmail(v))
+          .filter((v) => this.isValidEmail(v))
+      )
+    );
   }
 
   save(): void {
     this.errorMessage = '';
+
+    this.event.sharedWithEmails = this.sharedEmails.length ? [...this.sharedEmails] : undefined;
+    this.event.sharedWithEmail = this.sharedEmails.length === 1 ? this.sharedEmails[0] : undefined;
+
     if (!this.event.title || !this.event.type || !this.event.date) {
       this.errorMessage = 'Titulo, tipo y fecha son obligatorios.';
       return;
@@ -244,6 +265,44 @@ export class CreateEventComponent implements OnInit {
         this.toast.warning('Vincula Google para poder usar Drive.');
       }
     });
+  }
+
+  addSharedEmail(): void {
+    const raw = String(this.sharedEmailDraft || '').trim();
+    if (!raw) return;
+
+    const parts = raw.split(/[,\s]+/g).map((v) => this.normalizeEmail(v));
+    const valid = parts.filter((v) => this.isValidEmail(v));
+
+    if (valid.length === 0) {
+      this.toast.warning('Email inválido.');
+      return;
+    }
+
+    const merged = new Set(this.sharedEmails);
+    valid.forEach((v) => merged.add(v));
+    this.sharedEmails = Array.from(merged);
+    this.sharedEmailDraft = '';
+  }
+
+  removeSharedEmail(index: number): void {
+    this.sharedEmails = this.sharedEmails.filter((_, i) => i !== index);
+  }
+
+  onSharedEmailKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' || event.key === ',') {
+      event.preventDefault();
+      this.addSharedEmail();
+    }
+  }
+
+  private normalizeEmail(value: string): string {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  private isValidEmail(value: string): boolean {
+    if (!value) return false;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
   }
 }
 
