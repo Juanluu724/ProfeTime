@@ -199,7 +199,7 @@ export class CreateEventComponent implements OnInit {
       throw new Error('Falta googleApiKey (APP_GOOGLE_API_KEY).');
     }
 
-    const view = new google.picker.View(google.picker.ViewId.DOCS);
+    const view = new google.picker.DocsView(google.picker.ViewId.DOCS);
     view.setIncludeFolders(true);
     view.setSelectFolderEnabled(false);
 
