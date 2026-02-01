@@ -5,6 +5,123 @@ const firebaseAuth = require("../middleware/firebaseAuth");
 
 const router = express.Router();
 
+const ACADEMIC_DEGREES = {
+  ciclo_formativo: [
+    "Administración y Finanzas",
+    "Comercio Internacional",
+    "Gestión de Ventas y Espacios Comerciales",
+    "Marketing y Publicidad",
+    "Aplicaciones Multiplataforma",
+    "Aplicaciones Web",
+    "Animación 3D y Videojuegos",
+    "Sonido",
+    "Realización Audiovisual",
+    "Educación Infantil (DUAL)",
+    "Gestión de Alojamientos (DUAL)",
+    "Dirección de Cocina",
+    "Dirección de Servicios en Restauración",
+    "TSAF Acondicionamiento Físico"
+  ],
+  master_fp: [
+    "Ciberseguridad en Entornos de las Tecnologías de la Información",
+    "Desarrollo de Videojuegos y Realidad Virtual",
+    "Inteligencia Artificial y Big Data"
+  ]
+};
+
+function normalizeString(value) {
+  if (value === undefined || value === null) return "";
+  return String(value).trim();
+}
+
+function parseAcademicCurso(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const parsed = Number.parseInt(String(value), 10);
+  if (parsed === 1 || parsed === 2) return parsed;
+  return null;
+}
+
+function validateAcademicFields(payload) {
+  const type = normalizeString(payload?.type);
+  const isAcademic = type === "tarea" || type === "examen";
+
+  const tipoGrado = normalizeString(payload?.tipoGrado);
+  const grado = normalizeString(payload?.grado);
+  const curso = parseAcademicCurso(payload?.curso);
+
+  if (!isAcademic) {
+    return {
+      ok: true,
+      isAcademic: false,
+      tipoGrado: tipoGrado || null,
+      grado: grado || null,
+      curso
+    };
+  }
+
+  if (!tipoGrado) {
+    return { ok: false, msg: "tipoGrado es obligatorio para tareas/exámenes." };
+  }
+  if (!["ciclo_formativo", "master_fp", "grado"].includes(tipoGrado)) {
+    return { ok: false, msg: "tipoGrado no es válido." };
+  }
+  if (!grado) {
+    return { ok: false, msg: "grado es obligatorio para tareas/exámenes." };
+  }
+  if (!curso) {
+    return { ok: false, msg: "curso es obligatorio para tareas/exámenes (1 o 2)." };
+  }
+
+  if (tipoGrado === "ciclo_formativo") {
+    if (!ACADEMIC_DEGREES.ciclo_formativo.includes(grado)) {
+      return { ok: false, msg: "grado no es válido para Ciclo Formativo." };
+    }
+  }
+
+  if (tipoGrado === "master_fp") {
+    if (!ACADEMIC_DEGREES.master_fp.includes(grado)) {
+      return { ok: false, msg: "grado no es válido para Máster FP." };
+    }
+  }
+
+  return { ok: true, isAcademic: true, tipoGrado, grado, curso };
+}
+
+function parseCalendarFilters(query) {
+  const tipoGrado = normalizeString(query?.tipoGrado);
+  const grado = normalizeString(query?.grado);
+  const cursoRaw = query?.curso;
+
+  const curso = cursoRaw === undefined ? "" : normalizeString(cursoRaw);
+  const parsedCurso = curso ? parseAcademicCurso(curso) : null;
+  if (curso && !parsedCurso) {
+    return { ok: false, msg: "curso debe ser 1 o 2." };
+  }
+
+  if (tipoGrado && !["ciclo_formativo", "master_fp", "grado"].includes(tipoGrado)) {
+    return { ok: false, msg: "tipoGrado no es válido." };
+  }
+
+  return {
+    ok: true,
+    filters: {
+      tipoGrado: tipoGrado || null,
+      grado: grado || null,
+      curso: parsedCurso
+    }
+  };
+}
+
+function eventMatchesFilters(data, filters) {
+  const hasAny = !!(filters?.tipoGrado || filters?.grado || filters?.curso);
+  if (!hasAny) return true;
+
+  if (filters.tipoGrado && data.tipo_grado !== filters.tipoGrado) return false;
+  if (filters.grado && data.grado !== filters.grado) return false;
+  if (filters.curso && data.curso !== filters.curso) return false;
+  return true;
+}
+
 function createOAuthClient() {
   return new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
@@ -109,6 +226,9 @@ function mapEventToResponse(data, ownership, senderName) {
     type: data.tipo,
     title: data.titulo,
     description: data.descripcion,
+    tipoGrado: data.tipo_grado || null,
+    grado: data.grado || null,
+    curso: data.curso || null,
     startTime: data.hora_inicio,
     endTime: data.hora_fin,
     location: data.ubicacion,
@@ -129,6 +249,12 @@ router.get("/", async (req, res) => {
   try {
     const userId = req.userId;
 
+    const parsed = parseCalendarFilters(req.query || {});
+    if (!parsed.ok) {
+      return res.status(400).json({ msg: parsed.msg });
+    }
+    const filters = parsed.filters;
+
     const [ownedSnap, sharedSnap] = await Promise.all([
       db.collection("events").where("codigo_usuario_fk", "==", userId).get(),
       db.collection("events").where("participantes", "array-contains", userId).get()
@@ -137,7 +263,9 @@ router.get("/", async (req, res) => {
     const eventsMap = new Map();
 
     ownedSnap.forEach((doc) => {
-      eventsMap.set(doc.id, mapEventToResponse(doc.data(), "propio", null));
+      const data = doc.data();
+      if (!eventMatchesFilters(data, filters)) return;
+      eventsMap.set(doc.id, mapEventToResponse(data, "propio", null));
     });
 
     const sharedEvents = [];
@@ -167,6 +295,7 @@ router.get("/", async (req, res) => {
     });
 
     sharedEvents.forEach(({ id, data }) => {
+      if (!eventMatchesFilters(data, filters)) return;
       eventsMap.set(
         id,
         mapEventToResponse(data, "compartido", ownerNames.get(data.codigo_usuario_fk))
@@ -188,6 +317,9 @@ router.post("/", async (req, res) => {
       type,
       title,
       description,
+      tipoGrado,
+      grado,
+      curso,
       startTime,
       endTime,
       location,
@@ -203,6 +335,11 @@ router.post("/", async (req, res) => {
     const code = `E${Date.now()}`;
     const io = req.app.get("io");
 
+    const academic = validateAcademicFields({ type, tipoGrado, grado, curso });
+    if (!academic.ok) {
+      return res.status(400).json({ msg: academic.msg });
+    }
+
     const eventDoc = {
       codigo_evento: code,
       codigo_usuario_fk: userId,
@@ -213,6 +350,9 @@ router.post("/", async (req, res) => {
       tipo: type,
       titulo: title || null,
       descripcion: description || null,
+      tipo_grado: academic.isAcademic ? academic.tipoGrado : null,
+      grado: academic.isAcademic ? academic.grado : null,
+      curso: academic.isAcademic ? academic.curso : null,
       hora_inicio: startTime || null,
       hora_fin: endTime || null,
       ubicacion: location || null,
@@ -294,6 +434,9 @@ router.post("/", async (req, res) => {
           date,
           type,
           description,
+          tipoGrado: academic.isAcademic ? academic.tipoGrado : null,
+          grado: academic.isAcademic ? academic.grado : null,
+          curso: academic.isAcademic ? academic.curso : null,
           startTime,
           endTime,
           location,
@@ -328,7 +471,14 @@ router.post("/", async (req, res) => {
       }
     }
 
-    res.status(201).json({ codigo_evento: code, ...req.body, googleSync });
+    res.status(201).json({
+      codigo_evento: code,
+      ...req.body,
+      tipoGrado: academic.isAcademic ? academic.tipoGrado : null,
+      grado: academic.isAcademic ? academic.grado : null,
+      curso: academic.isAcademic ? academic.curso : null,
+      googleSync
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Error creando evento" });
@@ -343,6 +493,9 @@ router.put("/:codigo_evento", async (req, res) => {
       type,
       title,
       description,
+      tipoGrado,
+      grado,
+      curso,
       startTime,
       endTime,
       location,
@@ -361,11 +514,19 @@ router.put("/:codigo_evento", async (req, res) => {
       return res.status(404).json({ msg: "Evento no encontrado" });
     }
 
+    const academic = validateAcademicFields({ type, tipoGrado, grado, curso });
+    if (!academic.ok) {
+      return res.status(400).json({ msg: academic.msg });
+    }
+
     await eventRef.update({
       fec_inicio: date,
       tipo: type,
       titulo: title,
       descripcion: description,
+      tipo_grado: academic.isAcademic ? academic.tipoGrado : null,
+      grado: academic.isAcademic ? academic.grado : null,
+      curso: academic.isAcademic ? academic.curso : null,
       hora_inicio: startTime,
       hora_fin: endTime,
       ubicacion: location,

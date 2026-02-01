@@ -6,6 +6,9 @@ export interface CalendarEvent {
   date: string;
   endDate?: string;
   duration?: number;
+  tipoGrado?: 'ciclo_formativo' | 'master_fp' | 'grado' | null;
+  grado?: string | null;
+  curso?: 1 | 2 | null;
   startTime?: string;
   endTime?: string;
   description?: string;

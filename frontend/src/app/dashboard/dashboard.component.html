@@ -148,6 +148,56 @@
     </header>
 
     <div class="calendar" *ngIf="activeSection === 'calendar'">
+      <div class="calendar-filters">
+        <div class="filter">
+          <label>Tipo de grado</label>
+          <select [(ngModel)]="calendarTipoGrado" (ngModelChange)="onCalendarTipoGradoChange()">
+            <option value="">Todos</option>
+            <option value="ciclo_formativo">Ciclo Formativo</option>
+            <option value="master_fp">M&aacute;ster FP</option>
+            <option value="grado">Grado</option>
+          </select>
+        </div>
+
+        <div class="filter">
+          <label>Grado</label>
+          <select
+            *ngIf="calendarTipoGrado && calendarTipoGrado !== 'grado'"
+            [(ngModel)]="calendarGrado"
+            (ngModelChange)="onCalendarFiltersChange()"
+          >
+            <option value="">Todos</option>
+            <option *ngFor="let g of getCalendarGradoOptions()" [value]="g">{{ g }}</option>
+          </select>
+
+          <input
+            *ngIf="calendarTipoGrado === 'grado'"
+            type="text"
+            placeholder="Filtrar por grado..."
+            [(ngModel)]="calendarGrado"
+            (ngModelChange)="onCalendarFiltersChange()"
+          />
+
+          <select
+            *ngIf="!calendarTipoGrado"
+            [(ngModel)]="calendarGrado"
+            (ngModelChange)="onCalendarFiltersChange()"
+            [disabled]="true"
+          >
+            <option value="">Selecciona tipo</option>
+          </select>
+        </div>
+
+        <div class="filter">
+          <label>Curso</label>
+          <select [(ngModel)]="calendarCurso" (ngModelChange)="onCalendarFiltersChange()">
+            <option [ngValue]="''">Todos</option>
+            <option [ngValue]="1">1&ordm;</option>
+            <option [ngValue]="2">2&ordm;</option>
+          </select>
+        </div>
+      </div>
+
       <div class="week-header">
         <div *ngFor="let d of weekDays" class="day-name">{{ d }}</div>
       </div>

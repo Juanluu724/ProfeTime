@@ -242,6 +242,43 @@
   border: 1px solid #eef2f7;
 }
 
+.calendar-filters {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: end;
+}
+
+.calendar-filters .filter label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.calendar-filters select,
+.calendar-filters input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #111827;
+}
+
+.calendar-filters select:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+@media (max-width: 900px) {
+  .calendar-filters {
+    grid-template-columns: 1fr;
+  }
+}
+
 .list-view {
   background: #ffffff;
   border-radius: 14px;

@@ -31,11 +31,43 @@ export class CreateEventComponent implements OnInit {
   sharedEmailDraft = '';
   sharedEmails: string[] = [];
 
+  readonly tipoGradoOptions: Array<{ value: NonNullable<CalendarEvent['tipoGrado']>; label: string }> = [
+    { value: 'ciclo_formativo', label: 'Ciclo Formativo' },
+    { value: 'master_fp', label: 'Máster FP' },
+    { value: 'grado', label: 'Grado' }
+  ];
+
+  readonly gradosCicloFormativo: string[] = [
+    'Administración y Finanzas',
+    'Comercio Internacional',
+    'Gestión de Ventas y Espacios Comerciales',
+    'Marketing y Publicidad',
+    'Aplicaciones Multiplataforma',
+    'Aplicaciones Web',
+    'Animación 3D y Videojuegos',
+    'Sonido',
+    'Realización Audiovisual',
+    'Educación Infantil (DUAL)',
+    'Gestión de Alojamientos (DUAL)',
+    'Dirección de Cocina',
+    'Dirección de Servicios en Restauración',
+    'TSAF Acondicionamiento Físico'
+  ];
+
+  readonly gradosMasterFp: string[] = [
+    'Ciberseguridad en Entornos de las Tecnologías de la Información',
+    'Desarrollo de Videojuegos y Realidad Virtual',
+    'Inteligencia Artificial y Big Data'
+  ];
+
   event: CalendarEvent = {
     title: '',
     type: 'tarea',
     date: '',
-    sharedWithEmail: ''
+    sharedWithEmail: '',
+    tipoGrado: null,
+    grado: null,
+    curso: null
   };
 
   constructor(private dashboardService: DashboardService, private toast: ToastService) { }
@@ -70,6 +102,26 @@ export class CreateEventComponent implements OnInit {
       this.errorMessage = 'Titulo, tipo y fecha son obligatorios.';
       return;
     }
+
+    if (this.isAcademicEvent()) {
+      if (!this.event.tipoGrado) {
+        this.errorMessage = 'Tipo de grado es obligatorio.';
+        return;
+      }
+      if (!this.event.grado || !String(this.event.grado).trim()) {
+        this.errorMessage = 'Grado es obligatorio.';
+        return;
+      }
+      if (this.event.curso !== 1 && this.event.curso !== 2) {
+        this.errorMessage = 'Curso es obligatorio (1º o 2º).';
+        return;
+      }
+    } else {
+      this.event.tipoGrado = null;
+      this.event.grado = null;
+      this.event.curso = null;
+    }
+
     const hasStart = !!this.event.startTime;
     const hasEnd = !!this.event.endTime;
     if ((hasStart && !hasEnd) || (!hasStart && hasEnd)) {
@@ -240,6 +292,34 @@ export class CreateEventComponent implements OnInit {
         }
       })
       .build();
+  }
+
+  isAcademicEvent(): boolean {
+    return this.event.type === 'tarea' || this.event.type === 'examen';
+  }
+
+  getGradoOptions(): string[] {
+    if (this.event.tipoGrado === 'ciclo_formativo') return this.gradosCicloFormativo;
+    if (this.event.tipoGrado === 'master_fp') return this.gradosMasterFp;
+    return [];
+  }
+
+  onTipoGradoChange(): void {
+    const options = this.getGradoOptions();
+    if (options.length > 0 && this.event.grado && !options.includes(this.event.grado)) {
+      this.event.grado = null;
+    }
+    if (this.event.tipoGrado === 'grado' && !this.event.grado) {
+      this.event.grado = '';
+    }
+  }
+
+  onTypeChange(): void {
+    if (!this.isAcademicEvent()) {
+      this.event.tipoGrado = null;
+      this.event.grado = null;
+      this.event.curso = null;
+    }
   }
 
   attachDrive(): void {

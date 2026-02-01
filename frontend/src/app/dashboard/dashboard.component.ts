@@ -34,6 +34,33 @@ export class DashboardComponent implements OnInit, OnDestroy {
   daysInMonth: CalendarDayCell[] = [];
   events: CalendarEvent[] = [];
 
+  calendarTipoGrado: NonNullable<CalendarEvent['tipoGrado']> | '' = '';
+  calendarGrado: string = '';
+  calendarCurso: 1 | 2 | '' = '';
+
+  readonly gradosCicloFormativo: string[] = [
+    'Administración y Finanzas',
+    'Comercio Internacional',
+    'Gestión de Ventas y Espacios Comerciales',
+    'Marketing y Publicidad',
+    'Aplicaciones Multiplataforma',
+    'Aplicaciones Web',
+    'Animación 3D y Videojuegos',
+    'Sonido',
+    'Realización Audiovisual',
+    'Educación Infantil (DUAL)',
+    'Gestión de Alojamientos (DUAL)',
+    'Dirección de Cocina',
+    'Dirección de Servicios en Restauración',
+    'TSAF Acondicionamiento Físico'
+  ];
+
+  readonly gradosMasterFp: string[] = [
+    'Ciberseguridad en Entornos de las Tecnologías de la Información',
+    'Desarrollo de Videojuegos y Realidad Virtual',
+    'Inteligencia Artificial y Big Data'
+  ];
+
   notifications: any[] = [];
   pendingDismissNotification: any | null = null;
   dismissedNotificationIds = new Set<string>();
@@ -95,6 +122,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
         title: incoming.title || incoming.titulo || '',
         description: incoming.description || incoming.descripcion || '',
         type: incoming.type || incoming.tipo || 'otro',
+        tipoGrado: incoming.tipoGrado ?? incoming.tipo_grado ?? null,
+        grado: incoming.grado ?? null,
+        curso: incoming.curso ?? null,
         startTime: incoming.startTime || incoming.hora_inicio || null,
         endTime: incoming.endTime || incoming.hora_fin || null,
         location: incoming.location || incoming.ubicacion || null,
@@ -150,6 +180,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
         title: event.title || event.titulo || '',
         description: event.description || event.descripcion || '',
         type: event.type || event.tipo || 'otro',
+        tipoGrado: event.tipoGrado ?? event.tipo_grado ?? null,
+        grado: event.grado ?? null,
+        curso: event.curso ?? null,
         startTime: event.startTime || event.hora_inicio || null,
         endTime: event.endTime || event.hora_fin || null,
         location: event.location || event.ubicacion || null,
@@ -169,6 +202,51 @@ export class DashboardComponent implements OnInit, OnDestroy {
       console.error("Error cargando el dashboard:", error);
     });
   }
+
+  onCalendarTipoGradoChange(): void {
+    if (!this.calendarTipoGrado) {
+      this.calendarGrado = '';
+      this.generateCalendar();
+      return;
+    }
+
+    const options = this.getCalendarGradoOptions();
+    if (options.length > 0 && this.calendarGrado && !options.includes(this.calendarGrado)) {
+      this.calendarGrado = '';
+    }
+    this.generateCalendar();
+  }
+
+  onCalendarFiltersChange(): void {
+    this.generateCalendar();
+  }
+
+  getCalendarGradoOptions(): string[] {
+    if (this.calendarTipoGrado === 'ciclo_formativo') return this.gradosCicloFormativo;
+    if (this.calendarTipoGrado === 'master_fp') return this.gradosMasterFp;
+    return [];
+  }
+
+  private hasAnyCalendarFilter(): boolean {
+    return !!(this.calendarTipoGrado || this.calendarGrado || this.calendarCurso);
+  }
+
+  private calendarEventMatchesFilters(event: CalendarEvent): boolean {
+    if (this.calendarTipoGrado && event.tipoGrado !== this.calendarTipoGrado) return false;
+    if (this.calendarGrado && (event.grado || '') !== this.calendarGrado) return false;
+    if (this.calendarCurso && event.curso !== this.calendarCurso) return false;
+    return true;
+  }
+
+  private getCalendarEventsForView(): CalendarEvent[] {
+    const events = this.getCalendarEventsForView();
+    if (!this.hasAnyCalendarFilter()) return events;
+
+    return events
+      .filter((e) => e.type === 'tarea' || e.type === 'examen')
+      .filter((e) => this.calendarEventMatchesFilters(e));
+  }
+
   generateCalendar(): void {
     this.daysInMonth = [];
 

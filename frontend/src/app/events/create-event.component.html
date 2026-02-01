@@ -20,7 +20,7 @@
       <div class="grid-2">
         <div>
           <label>Tipo de evento *</label>
-          <select [(ngModel)]="event.type">
+          <select [(ngModel)]="event.type" (ngModelChange)="onTypeChange()">
             <option value="examen">Examen</option>
             <option value="tarea">Tarea</option>
             <option value="reunion">Reuni&oacute;n</option>
@@ -31,6 +31,43 @@
         <div>
           <label>Fecha *</label>
           <input type="date" [(ngModel)]="event.date" />
+        </div>
+      </div>
+
+      <div *ngIf="isAcademicEvent()">
+        <hr />
+        <h4>Clasificaci&oacute;n acad&eacute;mica</h4>
+
+        <div class="grid-2">
+          <div>
+            <label>Tipo de grado *</label>
+            <select [(ngModel)]="event.tipoGrado" (ngModelChange)="onTipoGradoChange()">
+              <option [ngValue]="null">Selecciona...</option>
+              <option *ngFor="let opt of tipoGradoOptions" [value]="opt.value">{{ opt.label }}</option>
+            </select>
+          </div>
+
+          <div>
+            <label>Curso *</label>
+            <select [(ngModel)]="event.curso">
+              <option [ngValue]="null">Selecciona...</option>
+              <option [ngValue]="1">1&ordm;</option>
+              <option [ngValue]="2">2&ordm;</option>
+            </select>
+          </div>
+        </div>
+
+        <div *ngIf="event.tipoGrado && event.tipoGrado !== 'grado'">
+          <label>Grado *</label>
+          <select [(ngModel)]="event.grado">
+            <option [ngValue]="null">Selecciona...</option>
+            <option *ngFor="let g of getGradoOptions()" [value]="g">{{ g }}</option>
+          </select>
+        </div>
+
+        <div *ngIf="event.tipoGrado === 'grado'">
+          <label>Grado *</label>
+          <input type="text" placeholder="Escribe el grado..." [(ngModel)]="event.grado" />
         </div>
       </div>
 

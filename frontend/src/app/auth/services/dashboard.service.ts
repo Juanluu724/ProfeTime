@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, Subject } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
 import { CalendarEvent } from '../../models/event.model';
@@ -53,8 +53,14 @@ export class DashboardService {
     return this.http.get(this.dashboardUrl);
   }
 
-  getEvents(): Observable<CalendarEvent[]> {
-    return this.http.get<CalendarEvent[]>(this.eventsUrl);
+  getEvents(filters?: { tipoGrado?: string | null; grado?: string | null; curso?: 1 | 2 | string | null }): Observable<CalendarEvent[]> {
+    let params = new HttpParams();
+    if (filters?.tipoGrado) params = params.set('tipoGrado', String(filters.tipoGrado));
+    if (filters?.grado) params = params.set('grado', String(filters.grado));
+    if (filters?.curso !== undefined && filters?.curso !== null && String(filters.curso).trim() !== '') {
+      params = params.set('curso', String(filters.curso));
+    }
+    return this.http.get<CalendarEvent[]>(this.eventsUrl, { params });
   }
 
   createEvent(event: any): Observable<any> {
