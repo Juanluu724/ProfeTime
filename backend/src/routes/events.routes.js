@@ -62,7 +62,7 @@ function validateAcademicFields(payload) {
   if (!tipoGrado) {
     return { ok: false, msg: "tipoGrado es obligatorio para tareas/exámenes." };
   }
-  if (!["ciclo_formativo", "master_fp", "grado"].includes(tipoGrado)) {
+  if (!["ciclo_formativo", "master_fp"].includes(tipoGrado)) {
     return { ok: false, msg: "tipoGrado no es válido." };
   }
   if (!grado) {
@@ -98,7 +98,7 @@ function parseCalendarFilters(query) {
     return { ok: false, msg: "curso debe ser 1 o 2." };
   }
 
-  if (tipoGrado && !["ciclo_formativo", "master_fp", "grado"].includes(tipoGrado)) {
+  if (tipoGrado && !["ciclo_formativo", "master_fp"].includes(tipoGrado)) {
     return { ok: false, msg: "tipoGrado no es válido." };
   }
 
@@ -120,6 +120,14 @@ function eventMatchesFilters(data, filters) {
   if (filters.grado && data.grado !== filters.grado) return false;
   if (filters.curso && data.curso !== filters.curso) return false;
   return true;
+}
+
+function sanitizeTipoGrado(value) {
+  const normalized = normalizeString(value);
+  if (!normalized) return null;
+  if (normalized === "ciclo_formativo") return normalized;
+  if (normalized === "master_fp") return normalized;
+  return null;
 }
 
 function createOAuthClient() {
@@ -226,7 +234,7 @@ function mapEventToResponse(data, ownership, senderName) {
     type: data.tipo,
     title: data.titulo,
     description: data.descripcion,
-    tipoGrado: data.tipo_grado || null,
+    tipoGrado: sanitizeTipoGrado(data.tipo_grado),
     grado: data.grado || null,
     curso: data.curso || null,
     startTime: data.hora_inicio,

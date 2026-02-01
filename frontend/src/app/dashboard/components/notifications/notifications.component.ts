@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -8,10 +8,38 @@ import { CommonModule } from '@angular/common';
   templateUrl: './notifications.component.html',
   styleUrls: ['./notifications.component.scss']
 })
-export class NotificationsComponent {
+export class NotificationsComponent implements OnChanges, OnDestroy {
   @Input() data: any[] = [];
   @Output() open = new EventEmitter<any>();
   @Output() dismiss = new EventEmitter<any>();
+
+  pulse = false;
+  private prevCount = 0;
+  private pulseTimer: any = null;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['data']) return;
+
+    const nextCount = Array.isArray(this.data) ? this.data.length : 0;
+    if (nextCount > this.prevCount) {
+      this.pulse = true;
+      if (this.pulseTimer) {
+        clearTimeout(this.pulseTimer);
+      }
+      this.pulseTimer = setTimeout(() => {
+        this.pulse = false;
+        this.pulseTimer = null;
+      }, 1200);
+    }
+    this.prevCount = nextCount;
+  }
+
+  ngOnDestroy(): void {
+    if (this.pulseTimer) {
+      clearTimeout(this.pulseTimer);
+      this.pulseTimer = null;
+    }
+  }
 
   // ASCII-only icon labels to avoid external icon fonts.
   getIcon(type: string): string {

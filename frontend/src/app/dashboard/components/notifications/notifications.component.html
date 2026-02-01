@@ -1,7 +1,7 @@
 <section class="notifications">
   <div class="header">
     <span class="label">NOTIFICACIONES</span>
-    <span class="count">{{ data.length || 0 }}</span>
+    <span class="count" [class.pulse]="pulse">{{ data.length || 0 }}</span>
   </div>
 
   <div *ngIf="!data || data.length === 0" class="empty">

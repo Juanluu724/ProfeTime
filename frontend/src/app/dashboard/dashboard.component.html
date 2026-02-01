@@ -1,14 +1,33 @@
 ﻿<div class="layout">
-  <aside class="sidebar">
+  <aside class="sidebar" [class.collapsed]="sidebarCollapsed">
     <div class="brand">
       <img class="brand-logo" src="assets/logo.jpg" alt="ProfeTime" />
       <span class="brand-text">ProfeTime</span>
+
+      <button
+        class="collapse-btn"
+        type="button"
+        (click)="toggleSidebar()"
+        [attr.title]="sidebarCollapsed ? 'Expandir' : 'Colapsar'"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M15 18l-6-6 6-6"></path>
+        </svg>
+      </button>
     </div>
 
-    <button class="btn-primary" (click)="openCreateEvent()">+ Crear Evento</button>
+    <button
+      class="btn-primary create-event-btn"
+      type="button"
+      (click)="openCreateEvent()"
+      [attr.title]="sidebarCollapsed ? 'Crear evento' : null"
+    >
+      <span class="create-event-icon">+</span>
+      <span class="create-event-text">Crear Evento</span>
+    </button>
 
     <nav class="menu">
-      <button class="item" type="button" [class.active]="activeSection === 'calendar'" (click)="setSection('calendar')">
+      <button class="item" type="button" [class.active]="activeSection === 'calendar'" (click)="setSection('calendar')" [attr.title]="sidebarCollapsed ? 'Calendario' : null">
         <span class="item-left">
           <span class="menu-icon calendar">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -16,10 +35,10 @@
               <path d="M8 3v4M16 3v4M3 10h18"></path>
             </svg>
           </span>
-          <span>Calendario</span>
+          <span class="item-text">Calendario</span>
         </span>
       </button>
-      <button class="item" type="button" [class.active]="activeSection === 'examenes'" (click)="setSection('examenes')">
+      <button class="item" type="button" [class.active]="activeSection === 'examenes'" (click)="setSection('examenes')" [attr.title]="sidebarCollapsed ? 'Examenes' : null">
         <span class="item-left">
           <span class="menu-icon exam">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -28,11 +47,11 @@
               <path d="M9 13h6M9 17h6"></path>
             </svg>
           </span>
-          <span>Examenes</span>
+          <span class="item-text">Examenes</span>
         </span>
-        <span class="badge">{{ menuCounts.examenes }}</span>
+        <span class="badge" *ngIf="!sidebarCollapsed">{{ menuCounts.examenes }}</span>
       </button>
-      <button class="item" type="button" [class.active]="activeSection === 'tareas'" (click)="setSection('tareas')">
+      <button class="item" type="button" [class.active]="activeSection === 'tareas'" (click)="setSection('tareas')" [attr.title]="sidebarCollapsed ? 'Tareas' : null">
         <span class="item-left">
           <span class="menu-icon task">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -40,12 +59,12 @@
               <path d="M8 7h8M8 11h8M8 15h5"></path>
             </svg>
           </span>
-          <span>Tareas</span>
+          <span class="item-text">Tareas</span>
         </span>
-        <span class="badge">{{ menuCounts.tareas }}</span>
+        <span class="badge" *ngIf="!sidebarCollapsed">{{ menuCounts.tareas }}</span>
       </button>
       <button class="item" type="button" [class.active]="activeSection === 'reuniones'"
-        (click)="setSection('reuniones')">
+        (click)="setSection('reuniones')" [attr.title]="sidebarCollapsed ? 'Reuniones' : null">
         <span class="item-left">
           <span class="menu-icon meeting">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -53,12 +72,12 @@
               <path d="M17 10l4-2v8l-4-2"></path>
             </svg>
           </span>
-          <span>Reuniones</span>
+          <span class="item-text">Reuniones</span>
         </span>
-        <span class="badge">{{ menuCounts.reuniones }}</span>
+        <span class="badge" *ngIf="!sidebarCollapsed">{{ menuCounts.reuniones }}</span>
       </button>
       <button class="item" type="button" [class.active]="activeSection === 'otros'"
-        (click)="setSection('otros')">
+        (click)="setSection('otros')" [attr.title]="sidebarCollapsed ? 'Otros' : null">
         <span class="item-left">
           <span class="menu-icon other">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -67,12 +86,12 @@
               <circle cx="19" cy="12" r="1.8"></circle>
             </svg>
           </span>
-          <span>Otros</span>
+          <span class="item-text">Otros</span>
         </span>
-        <span class="badge">{{ menuCounts.otros }}</span>
+        <span class="badge" *ngIf="!sidebarCollapsed">{{ menuCounts.otros }}</span>
       </button>
       <button class="item" type="button" [class.active]="activeSection === 'compartidos'"
-        (click)="setSection('compartidos')">
+        (click)="setSection('compartidos')" [attr.title]="sidebarCollapsed ? 'Compartidos' : null">
         <span class="item-left">
           <span class="menu-icon shared">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -81,12 +100,27 @@
               <path d="M2 20c0-3 3-5 6-5M12 20c0-3 3-5 6-5"></path>
             </svg>
           </span>
-          <span>Compartidos</span>
+          <span class="item-text">Compartidos</span>
         </span>
       </button>
     </nav>
 
+    <button
+      *ngIf="sidebarCollapsed"
+      class="notifications-mini"
+      type="button"
+      (click)="toggleSidebar()"
+      title="Ver notificaciones"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 7h18s-3 0-3-7"></path>
+        <path d="M13.73 21a2 2 0 01-3.46 0"></path>
+      </svg>
+      <span class="notifications-mini-count" *ngIf="notifications.length">{{ notifications.length }}</span>
+    </button>
+
     <app-notifications
+      *ngIf="!sidebarCollapsed"
       [data]="notifications"
       (open)="openNotification($event)"
       (dismiss)="requestDismissNotification($event)"
@@ -103,19 +137,24 @@
       </div>
     </div>
 
-    <button class="btn-primary google-link-btn" type="button" (click)="linkGoogleApis()">
-      <span>Google Calendar / Drive</span>
+    <button
+      class="btn-primary google-link-btn"
+      type="button"
+      (click)="linkGoogleApis()"
+      [attr.title]="sidebarCollapsed ? 'Google Calendar / Drive' : null"
+    >
+      <span class="google-link-text">Google Calendar / Drive</span>
       <span class="link-status" [class.ok]="googleLinked">{{ googleLinked ? 'Conectado' : 'Conectar' }}</span>
     </button>
 
-    <button class="logout-sidebar" (click)="logout()" title="Cerrar sesion">
+    <button class="logout-sidebar" (click)="logout()" [attr.title]="sidebarCollapsed ? 'Salir' : 'Cerrar sesion'">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
         <polyline points="16 17 21 12 16 7"></polyline>
         <line x1="21" y1="12" x2="9" y2="12"></line>
       </svg>
-      <span>Salir</span>
+      <span class="logout-text">Salir</span>
     </button>
   </aside>
 
@@ -155,36 +194,14 @@
             <option value="">Todos</option>
             <option value="ciclo_formativo">Ciclo Formativo</option>
             <option value="master_fp">M&aacute;ster FP</option>
-            <option value="grado">Grado</option>
           </select>
         </div>
 
         <div class="filter">
           <label>Grado</label>
-          <select
-            *ngIf="calendarTipoGrado && calendarTipoGrado !== 'grado'"
-            [(ngModel)]="calendarGrado"
-            (ngModelChange)="onCalendarFiltersChange()"
-          >
-            <option value="">Todos</option>
+          <select [(ngModel)]="calendarGrado" (ngModelChange)="onCalendarFiltersChange()" [disabled]="!calendarTipoGrado">
+            <option value="">{{ calendarTipoGrado ? 'Todos' : 'Selecciona tipo' }}</option>
             <option *ngFor="let g of getCalendarGradoOptions()" [value]="g">{{ g }}</option>
-          </select>
-
-          <input
-            *ngIf="calendarTipoGrado === 'grado'"
-            type="text"
-            placeholder="Filtrar por grado..."
-            [(ngModel)]="calendarGrado"
-            (ngModelChange)="onCalendarFiltersChange()"
-          />
-
-          <select
-            *ngIf="!calendarTipoGrado"
-            [(ngModel)]="calendarGrado"
-            (ngModelChange)="onCalendarFiltersChange()"
-            [disabled]="true"
-          >
-            <option value="">Selecciona tipo</option>
           </select>
         </div>
 

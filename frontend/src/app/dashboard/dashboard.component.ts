@@ -72,6 +72,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   pendingDelete: CalendarEvent | null = null;
   googleLinked = false;
 
+  sidebarCollapsed = false;
+  private readonly sidebarStorageKey = 'profetime_sidebar_collapsed';
+
   menuCounts = {
     examenes: 0,
     tareas: 0,
@@ -89,6 +92,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
+    this.sidebarCollapsed = localStorage.getItem(this.sidebarStorageKey) === '1';
+
     // 3. LÃ“GICA PARA OBTENER EL NOMBRE
     this.authService.user$.subscribe(user => {
       if (user) {
@@ -164,6 +169,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (this.socketSubscription) {
       this.socketSubscription.unsubscribe();
     }
+  }
+
+  toggleSidebar(): void {
+    this.sidebarCollapsed = !this.sidebarCollapsed;
+    localStorage.setItem(this.sidebarStorageKey, this.sidebarCollapsed ? '1' : '0');
   }
 
   loadDashboard(): void {

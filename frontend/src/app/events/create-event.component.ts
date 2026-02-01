@@ -33,8 +33,7 @@ export class CreateEventComponent implements OnInit {
 
   readonly tipoGradoOptions: Array<{ value: NonNullable<CalendarEvent['tipoGrado']>; label: string }> = [
     { value: 'ciclo_formativo', label: 'Ciclo Formativo' },
-    { value: 'master_fp', label: 'Máster FP' },
-    { value: 'grado', label: 'Grado' }
+    { value: 'master_fp', label: 'Máster FP' }
   ];
 
   readonly gradosCicloFormativo: string[] = [
@@ -308,9 +307,6 @@ export class CreateEventComponent implements OnInit {
     const options = this.getGradoOptions();
     if (options.length > 0 && this.event.grado && !options.includes(this.event.grado)) {
       this.event.grado = null;
-    }
-    if (this.event.tipoGrado === 'grado' && !this.event.grado) {
-      this.event.grado = '';
     }
   }
 
