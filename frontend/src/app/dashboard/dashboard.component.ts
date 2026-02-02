@@ -60,12 +60,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
     'Desarrollo de Videojuegos y Realidad Virtual',
     'Inteligencia Artificial y Big Data'
   ];
+  private readonly tipoGradoLabelMap: Record<NonNullable<CalendarEvent['tipoGrado']>, string> = {
+    ciclo_formativo: 'Ciclo Formativo',
+    master_fp: 'Máster FP'
+  };
 
   notifications: any[] = [];
   pendingDismissNotification: any | null = null;
   dismissedNotificationIds = new Set<string>();
   selectedDate: string | null = null;
   highlightEventId: string | null = null;
+  selectedEventDetails: CalendarEvent | null = null;
 
   showCreateEvent = false;
   eventToEdit?: CalendarEvent;
@@ -337,6 +342,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   editarEvento(event: CalendarEvent) {
     console.log('Editando evento:', event);
+    this.selectedEventDetails = null;
     this.eventToEdit = event;
     this.showCreateEvent = true;
   }
@@ -347,6 +353,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   eliminarEvento(event: CalendarEvent) {
+    this.selectedEventDetails = null;
     if (!event.codigo_evento) {
       this.toast.error('Error: el evento no tiene un cÃ³digo vÃ¡lido.');
       return;
@@ -357,6 +364,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   setSection(section: 'calendar' | 'examenes' | 'tareas' | 'reuniones' | 'otros' | 'compartidos'): void {
     this.activeSection = section;
     this.selectedDate = null;
+    this.selectedEventDetails = null;
   }
 
   get filteredEvents(): CalendarEvent[] {
@@ -423,6 +431,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   openNotification(item: any) {
+    this.selectedEventDetails = null;
     const id = item?.id;
     const found = id ? this.events.find((e) => e.codigo_evento === id) : undefined;
     const type = (found?.type || item?.type) as CalendarEvent['type'] | undefined;
@@ -484,6 +493,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (!day?.isCurrentMonth || !day?.date) {
       return;
     }
+    this.selectedEventDetails = null;
     this.selectedDate = this.normalizeDate(day.date);
 
     // Si hay eventos en ese dÃ­a, cambiamos a la secciÃ³n del primer evento
@@ -520,6 +530,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (type === 'tarea') return 'Tarea';
     if (type === 'reunion') return 'Reunion';
     return 'Otro';
+  }
+
+  getTipoGradoLabel(tipo?: CalendarEvent['tipoGrado']): string {
+    if (!tipo) return '';
+    return this.tipoGradoLabelMap[tipo] || '';
+  }
+
+  getCursoLabel(curso?: CalendarEvent['curso']): string {
+    if (curso === 1) return '1º';
+    if (curso === 2) return '2º';
+    return '';
+  }
+
+  openEventDetails(event: CalendarEvent): void {
+    this.selectedEventDetails = { ...event, date: this.normalizeDate(event.date) };
+  }
+
+  closeEventDetails(): void {
+    this.selectedEventDetails = null;
   }
 
   private normalizeDate(value: string): string {

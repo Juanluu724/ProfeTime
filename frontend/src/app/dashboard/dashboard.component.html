@@ -252,10 +252,15 @@
         No hay eventos.
       </div>
       <div
-        class="list-card"
+        class="list-card clickable"
         *ngFor="let event of filteredEvents"
         [attr.id]="'event-' + event.codigo_evento"
         [class.highlight]="event.codigo_evento && event.codigo_evento === highlightEventId"
+        role="button"
+        tabindex="0"
+        (click)="openEventDetails(event)"
+        (keydown.enter)="openEventDetails(event)"
+        (keydown.space)="openEventDetails(event); $event.preventDefault()"
       >
         <div class="list-left">
           <span class="list-icon" [ngClass]="event.type">{{ typeLabel(event.type) | slice:0:1 }}</span>
@@ -280,23 +285,23 @@
               Compartido por {{ event.senderName }}
             </div>
             <div class="list-meta" *ngIf="event.meet">
-              Meet: <a class="list-link" [href]="event.meet" target="_blank" rel="noopener">Abrir</a>
+              Meet: <a class="list-link" [href]="event.meet" target="_blank" rel="noopener" (click)="$event.stopPropagation()">Abrir</a>
             </div>
             <div class="list-meta" *ngIf="event.drive">
               Drive:
-              <a class="list-link" [href]="event.drive" target="_blank" rel="noopener">Abrir</a>
+              <a class="list-link" [href]="event.drive" target="_blank" rel="noopener" (click)="$event.stopPropagation()">Abrir</a>
               <span *ngIf="event.driveFileName"> ({{ event.driveFileName }})</span>
             </div>
             <div class="list-meta" *ngIf="event.maps">
-              Maps: <a class="list-link" [href]="event.maps" target="_blank" rel="noopener">Abrir</a>
+              Maps: <a class="list-link" [href]="event.maps" target="_blank" rel="noopener" (click)="$event.stopPropagation()">Abrir</a>
             </div>
             <div class="list-desc" *ngIf="event.description">{{ event.description }}</div>
           </div>
 
 
           <div class="list-actions">
-            <button class="btn-edit" (click)="editarEvento(event)">Editar</button>
-            <button class="btn-delete" (click)="eliminarEvento(event)">Borrar</button>
+            <button class="btn-edit" (click)="$event.stopPropagation(); editarEvento(event)">Editar</button>
+            <button class="btn-delete" (click)="$event.stopPropagation(); eliminarEvento(event)">Borrar</button>
           </div>
         </div>
       </div>
@@ -304,6 +309,104 @@
   </main>
 </div>
 
+
+<div
+  class="event-detail-overlay"
+  *ngIf="selectedEventDetails as detail"
+  (click)="closeEventDetails()"
+>
+  <div class="event-detail-card" (click)="$event.stopPropagation()">
+    <header class="detail-header">
+      <div>
+        <p class="detail-type">{{ typeLabel(detail.type) }}</p>
+        <h3 class="detail-title">{{ detail.title || typeLabel(detail.type) }}</h3>
+        <div class="detail-subtitle">
+          <span>{{ formatDateLabel(detail.date) }}</span>
+          <span *ngIf="detail.startTime || detail.endTime">
+            · {{ formatTimeRange(detail.startTime, detail.endTime) }}
+          </span>
+        </div>
+      </div>
+
+      <div class="detail-header-actions">
+        <span *ngIf="detail.ownership === 'compartido'" class="detail-badge">Compartido</span>
+        <button class="close-detail-btn" type="button" (click)="closeEventDetails()">&times;</button>
+      </div>
+    </header>
+
+    <div class="detail-grid">
+      <div class="detail-row">
+        <span class="detail-label">Tipo</span>
+        <span class="detail-value">{{ typeLabel(detail.type) }}</span>
+      </div>
+
+      <div class="detail-row" *ngIf="detail.location">
+        <span class="detail-label">Ubicación</span>
+        <span class="detail-value">{{ detail.location }}</span>
+      </div>
+
+      <div class="detail-row" *ngIf="detail.tipoGrado">
+        <span class="detail-label">Tipo de grado</span>
+        <span class="detail-value">{{ getTipoGradoLabel(detail.tipoGrado) }}</span>
+      </div>
+
+      <div class="detail-row" *ngIf="detail.grado">
+        <span class="detail-label">Grado</span>
+        <span class="detail-value">{{ detail.grado }}</span>
+      </div>
+
+      <div class="detail-row" *ngIf="detail.curso">
+        <span class="detail-label">Curso</span>
+        <span class="detail-value">{{ getCursoLabel(detail.curso) }}</span>
+      </div>
+
+      <div class="detail-row" *ngIf="detail.sharedWithEmails?.length">
+        <span class="detail-label">Compartido con</span>
+        <span class="detail-value">{{ detail.sharedWithEmails.join(', ') }}</span>
+      </div>
+
+      <div class="detail-row" *ngIf="detail.senderName">
+        <span class="detail-label">Remitente</span>
+        <span class="detail-value">{{ detail.senderName }}</span>
+      </div>
+
+      <div class="detail-row" *ngIf="detail.meet">
+        <span class="detail-label">Meet</span>
+        <a class="detail-link" [href]="detail.meet" target="_blank" rel="noopener">Abrir enlace</a>
+      </div>
+
+      <div class="detail-row" *ngIf="detail.drive">
+        <span class="detail-label">Drive</span>
+        <span class="detail-value">
+          <a class="detail-link" [href]="detail.drive" target="_blank" rel="noopener">Abrir en Drive</a>
+          <span *ngIf="detail.driveFileName"> ({{ detail.driveFileName }})</span>
+        </span>
+      </div>
+
+      <div class="detail-row" *ngIf="detail.maps">
+        <span class="detail-label">Mapa</span>
+        <a class="detail-link" [href]="detail.maps" target="_blank" rel="noopener">Abrir en Maps</a>
+      </div>
+    </div>
+
+    <div class="detail-description" *ngIf="detail.description">
+      <span class="detail-label">Descripción</span>
+      <p>{{ detail.description }}</p>
+    </div>
+
+    <div class="detail-actions">
+      <div class="detail-meta">
+        <span *ngIf="detail.ownership === 'compartido' && detail.senderName">
+          Compartido por {{ detail.senderName }}
+        </span>
+      </div>
+      <div class="detail-buttons">
+        <button class="btn-edit" type="button" (click)="editarEvento(detail)">Editar</button>
+        <button class="btn-delete" type="button" (click)="eliminarEvento(detail)">Borrar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="confirm-overlay" *ngIf="pendingDelete">
   <div class="confirm-card" role="dialog" aria-modal="true">
