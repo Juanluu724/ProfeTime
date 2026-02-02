@@ -249,12 +249,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private calendarEventMatchesFilters(event: CalendarEvent): boolean {
     if (this.calendarTipoGrado && event.tipoGrado !== this.calendarTipoGrado) return false;
     if (this.calendarGrado && (event.grado || '') !== this.calendarGrado) return false;
-    if (this.calendarCurso && event.curso !== this.calendarCurso) return false;
+
+    if (this.calendarCurso) {
+      const eventCurso = event.curso !== undefined && event.curso !== null ? Number(event.curso) as 1 | 2 : null;
+      if (eventCurso !== this.calendarCurso) return false;
+    }
     return true;
   }
 
   private getCalendarEventsForView(): CalendarEvent[] {
-    const events = this.getCalendarEventsForView();
+    const events = Array.isArray(this.events) ? this.events : [];
     if (!this.hasAnyCalendarFilter()) return events;
 
     return events
@@ -278,7 +282,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.daysInMonth.push({ day, isCurrentMonth: false, date: null, isToday: false, events: [] });
     }
 
-    const events = Array.isArray(this.events) ? this.events : [];
+    const events = this.getCalendarEventsForView();
 
     // DÃ­as del mes actual
     for (let d = 1; d <= totalDays; d++) {
