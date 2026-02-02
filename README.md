@@ -14,7 +14,7 @@
 
 ---
 
-## 📖 Visión General
+## Visión General
 
 **ProfeTime** es una aplicación web integral diseñada para optimizar la gestión del tiempo de profesores y estudiantes. Permite la planificación de eventos académicos, sincronización con herramientas de Google y colaboración en tiempo real.
 
@@ -22,21 +22,21 @@ La aplicación sigue una arquitectura moderna **Cliente-Servidor** desacoplada (
 
 ---
 
-## ✨ Características Principales
+## Características Principales
 
-* **📅 Calendario Interactivo:** Vista mensual detallada con filtrado por tipo de evento (Exámenes, Tareas, Reuniones).
-* **🎓 Gestión Académica:** Clasificación específica para Ciclos Formativos y Másteres FP (grados, cursos).
-* **🔗 Integración Profunda con Google:**
+* ** Calendario Interactivo:** Vista mensual detallada con filtrado por tipo de evento (Exámenes, Tareas, Reuniones).
+* ** Gestión Académica:** Clasificación específica para Ciclos Formativos y Másteres FP (grados, cursos).
+* ** Integración Profunda con Google:**
     * Inicio de sesión con **Google/Firebase Auth**.
     * Sincronización bidireccional con **Google Calendar**.
     * Generación automática de enlaces de **Google Meet**.
     * Adjuntar archivos directamente desde **Google Drive** usando el *Google Picker*.
-* **🔔 Tiempo Real:** Sistema de notificaciones instantáneas mediante WebSockets (Socket.io) para eventos compartidos y actualizaciones.
-* **👥 Colaboración:** Comparte eventos con otros usuarios por correo electrónico.
+* ** Tiempo Real:** Sistema de notificaciones instantáneas mediante WebSockets (Socket.io) para eventos compartidos y actualizaciones.
+* ** Colaboración:** Comparte eventos con otros usuarios por correo electrónico.
 
 ---
 
-## 🛠️ Stack Tecnológico
+## Stack Tecnológico
 
 ### Frontend (Cliente)
 * **Framework:** Angular v16 (Standalone components, Typed Forms).
@@ -54,7 +54,7 @@ La aplicación sigue una arquitectura moderna **Cliente-Servidor** desacoplada (
 
 ---
 
-## 🏗️ Arquitectura del Sistema
+## Arquitectura del Sistema
 
 El sistema utiliza un enfoque híbrido de comunicación para garantizar la consistencia de datos y la inmediatez.
 
