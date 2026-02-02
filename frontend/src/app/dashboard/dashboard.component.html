@@ -362,7 +362,7 @@
 
       <div class="detail-row" *ngIf="detail.sharedWithEmails?.length">
         <span class="detail-label">Compartido con</span>
-        <span class="detail-value">{{ detail.sharedWithEmails.join(', ') }}</span>
+        <span class="detail-value">{{ detail.sharedWithEmails?.join(', ') }}</span>
       </div>
 
       <div class="detail-row" *ngIf="detail.senderName">
