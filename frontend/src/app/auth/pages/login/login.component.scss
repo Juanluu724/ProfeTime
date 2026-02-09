@@ -22,34 +22,36 @@
   background: #ffffff;
   border: 1px solid var(--border);
   border-radius: 22px;
-  padding: 40px 32px 34px;
+  padding: 44px 36px 38px;
   box-shadow: var(--shadow);
 }
 
 .mark {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   place-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .logo {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  object-fit: cover;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12);
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  object-fit: contain;
+  background: #ffffff;
+  padding: 6px;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.14);
 }
 
 h1 {
   margin: 0;
-  font-size: 26px;
+  font-size: 28px;
   letter-spacing: -0.3px;
   color: var(--ink);
 }
 
 .tagline {
-  margin: 0 0 22px;
+  margin: 0 0 26px;
   color: rgba(15, 23, 42, 0.68);
   font-size: 13px;
 }
@@ -158,6 +160,6 @@ h1 {
   }
 
   .login-shell {
-    padding: 34px 24px 30px;
+    padding: 38px 26px 32px;
   }
 }
