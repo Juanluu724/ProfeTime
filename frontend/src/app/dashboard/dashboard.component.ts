@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CalendarEvent } from '../models/event.model';
 import { Subscription, forkJoin } from 'rxjs';
 import { ToastService } from '../ui/toast.service';
+import { CycleDegreeSelection, CyclePreferencesResponse, PreferencesService } from '../preferences/preferences.service';
 
 interface CalendarDayCell {
   day: number;
@@ -26,7 +27,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   currentDate = new Date();
   monthYearDisplay = '';
   weekDays = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
-  activeSection: 'calendar' | 'examenes' | 'tareas' | 'reuniones' | 'otros' | 'compartidos' = 'calendar';
+  activeSection: 'calendar' | 'examenes' | 'tareas' | 'reuniones' | 'otros' | 'compartidos' | 'settings' = 'calendar';
 
   socketSubscription?: Subscription;
   deleteSubscription?: Subscription;
@@ -37,6 +38,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   calendarTipoGrado: NonNullable<CalendarEvent['tipoGrado']> | '' = '';
   calendarGrado: string = '';
   calendarCurso: 1 | 2 | '' = '';
+
+  cyclePrefSelected: CycleDegreeSelection = { ciclo_formativo: [], master_fp: [] };
+  cyclePrefsLoaded = false;
 
   readonly gradosCicloFormativo: string[] = [
     'Administración y Finanzas',
@@ -91,6 +95,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private dashboardService: DashboardService,
     // 2. INYECCIÃ“N AÃ‘ADIDA
     private authService: AuthService,
+    private preferencesService: PreferencesService,
     private toast: ToastService,
     private route: ActivatedRoute,
     private router: Router
@@ -109,8 +114,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
       }
     });
 
+    this.cyclePrefSelected = {
+      ciclo_formativo: [...this.gradosCicloFormativo],
+      master_fp: [...this.gradosMasterFp]
+    };
+
     this.updateMonthTitle();
-    this.loadDashboard();
+    this.loadCyclePreferencesAndDashboard();
     this.refreshGoogleStatus();
 
     const linked = this.route.snapshot.queryParamMap.get('linked');
@@ -147,6 +157,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
         ownership: incoming.ownership || 'compartido',
         senderName: incoming.senderName || null
       };
+
+      if (!this.shouldShowEventByCyclePref(normalized)) {
+        return;
+      }
 
       const existingIndex = this.events.findIndex((e) => e.codigo_evento === id);
       if (existingIndex >= 0) {
@@ -209,7 +223,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         maps: event.maps || event.maps_link || null,
         ownership: event.ownership || 'propio',
         senderName: event.senderName || null
-      }));
+      })).filter((e) => this.shouldShowEventByCyclePref(e));
 
       this.notifications = this.buildNotifications(this.events);
       this.generateCalendar();
@@ -237,8 +251,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   getCalendarGradoOptions(): string[] {
-    if (this.calendarTipoGrado === 'ciclo_formativo') return this.gradosCicloFormativo;
-    if (this.calendarTipoGrado === 'master_fp') return this.gradosMasterFp;
+    if (this.calendarTipoGrado === 'ciclo_formativo') return this.cyclePrefSelected.ciclo_formativo || [];
+    if (this.calendarTipoGrado === 'master_fp') return this.cyclePrefSelected.master_fp || [];
     return [];
   }
 
@@ -365,7 +379,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.pendingDelete = event;
   }
 
-  setSection(section: 'calendar' | 'examenes' | 'tareas' | 'reuniones' | 'otros' | 'compartidos'): void {
+  setSection(section: 'calendar' | 'examenes' | 'tareas' | 'reuniones' | 'otros' | 'compartidos' | 'settings'): void {
     this.activeSection = section;
     this.selectedDate = null;
     this.selectedEventDetails = null;
@@ -373,6 +387,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   get filteredEvents(): CalendarEvent[] {
     if (this.activeSection === 'calendar') {
+      return [];
+    }
+    if (this.activeSection === 'settings') {
       return [];
     }
     if (this.activeSection === 'compartidos') {
@@ -403,8 +420,63 @@ export class DashboardComponent implements OnInit, OnDestroy {
       case 'reuniones': return 'Reuniones';
       case 'otros': return 'Otros';
       case 'compartidos': return 'Compartidos';
+      case 'settings': return 'Ajustes';
       default: return 'Calendario';
     }
+  }
+
+  private loadCyclePreferencesAndDashboard(): void {
+    this.preferencesService.getCyclePreferences().subscribe({
+      next: (res: CyclePreferencesResponse) => {
+        this.cyclePrefsLoaded = true;
+        if (res?.selected) {
+          this.cyclePrefSelected = {
+            ciclo_formativo: [...(res.selected.ciclo_formativo || [])],
+            master_fp: [...(res.selected.master_fp || [])]
+          };
+        }
+        this.loadDashboard();
+      },
+      error: () => {
+        this.cyclePrefsLoaded = false;
+        this.loadDashboard();
+      }
+    });
+  }
+
+  onCyclePreferencesSaved(res: CyclePreferencesResponse): void {
+    if (res?.selected) {
+      this.cyclePrefSelected = {
+        ciclo_formativo: [...(res.selected.ciclo_formativo || [])],
+        master_fp: [...(res.selected.master_fp || [])]
+      };
+    }
+
+    if (this.calendarTipoGrado) {
+      const options = this.getCalendarGradoOptions();
+      if (this.calendarGrado && !options.includes(this.calendarGrado)) {
+        this.calendarGrado = '';
+      }
+    }
+
+    this.loadDashboard();
+  }
+
+  private shouldShowEventByCyclePref(event: CalendarEvent): boolean {
+    if (!event) return false;
+    if (event.type !== 'tarea' && event.type !== 'examen') return true;
+
+    const tipo = event.tipoGrado || null;
+    const grado = (event.grado || '').trim();
+    if (!tipo || !grado) return true;
+
+    if (tipo === 'ciclo_formativo') {
+      return (this.cyclePrefSelected.ciclo_formativo || []).includes(grado);
+    }
+    if (tipo === 'master_fp') {
+      return (this.cyclePrefSelected.master_fp || []).includes(grado);
+    }
+    return true;
   }
 
   private incrementMenuCount(type: CalendarEvent['type']): void {

@@ -75,6 +75,7 @@ require("./src/config/firebase");
 app.use("/api/auth", require("./src/routes/auth.routes"));
 app.use("/api/dashboard", require("./src/routes/dashboard.routes"));
 app.use("/api/events", require("./src/routes/events.routes"));
+app.use("/api/preferences", require("./src/routes/preferences.routes"));
 app.use("/api/google", require("./src/routes/google.routes"));
 
 // Servir Angular (build) desde el mismo backend en Render

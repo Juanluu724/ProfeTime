@@ -11,6 +11,7 @@ import { CreateEventComponent } from './events/create-event.component';
 import { NotificationsComponent } from './dashboard/components/notifications/notifications.component';
 import { AuthInterceptor } from './auth/auth.interceptor';
 import { ToastContainerComponent } from './ui/toast-container.component';
+import { CyclePreferencesComponent } from './preferences/cycle-preferences.component';
 
 @NgModule({
   declarations: [
@@ -25,7 +26,8 @@ import { ToastContainerComponent } from './ui/toast-container.component';
     FormsModule,
     HttpClientModule,
     NotificationsComponent,
-    ToastContainerComponent
+    ToastContainerComponent,
+    CyclePreferencesComponent
   ],
   providers: [
     {

@@ -2,32 +2,10 @@ const express = require("express");
 const { google } = require("googleapis");
 const { admin, db } = require("../config/firebase");
 const firebaseAuth = require("../middleware/firebaseAuth");
+const { ACADEMIC_DEGREES } = require("../constants/academicDegrees");
+const { getCyclePreferencesForUser } = require("../services/cyclePreferences");
 
 const router = express.Router();
-
-const ACADEMIC_DEGREES = {
-  ciclo_formativo: [
-    "Administración y Finanzas",
-    "Comercio Internacional",
-    "Gestión de Ventas y Espacios Comerciales",
-    "Marketing y Publicidad",
-    "Aplicaciones Multiplataforma",
-    "Aplicaciones Web",
-    "Animación 3D y Videojuegos",
-    "Sonido",
-    "Realización Audiovisual",
-    "Educación Infantil (DUAL)",
-    "Gestión de Alojamientos (DUAL)",
-    "Dirección de Cocina",
-    "Dirección de Servicios en Restauración",
-    "TSAF Acondicionamiento Físico"
-  ],
-  master_fp: [
-    "Ciberseguridad en Entornos de las Tecnologías de la Información",
-    "Desarrollo de Videojuegos y Realidad Virtual",
-    "Inteligencia Artificial y Big Data"
-  ]
-};
 
 function normalizeString(value) {
   if (value === undefined || value === null) return "";
@@ -263,6 +241,27 @@ router.get("/", async (req, res) => {
     }
     const filters = parsed.filters;
 
+    const { selectedDegrees } = await getCyclePreferencesForUser(userId, req.userClaims);
+    const selectedCf = new Set(selectedDegrees?.ciclo_formativo || []);
+    const selectedMf = new Set(selectedDegrees?.master_fp || []);
+
+    const isAcademicEventType = (tipo) => {
+      const t = normalizeString(tipo).toLowerCase();
+      return t === "tarea" || t === "examen";
+    };
+
+    const matchesCyclePreferences = (data) => {
+      if (!isAcademicEventType(data?.tipo)) return true;
+
+      const tipoGrado = sanitizeTipoGrado(data?.tipo_grado);
+      const grado = normalizeString(data?.grado);
+      if (!tipoGrado || !grado) return true;
+
+      if (tipoGrado === "ciclo_formativo") return selectedCf.has(grado);
+      if (tipoGrado === "master_fp") return selectedMf.has(grado);
+      return true;
+    };
+
     const [ownedSnap, sharedSnap] = await Promise.all([
       db.collection("events").where("codigo_usuario_fk", "==", userId).get(),
       db.collection("events").where("participantes", "array-contains", userId).get()
@@ -272,6 +271,7 @@ router.get("/", async (req, res) => {
 
     ownedSnap.forEach((doc) => {
       const data = doc.data();
+      if (!matchesCyclePreferences(data)) return;
       if (!eventMatchesFilters(data, filters)) return;
       eventsMap.set(doc.id, mapEventToResponse(data, "propio", null));
     });
@@ -281,6 +281,9 @@ router.get("/", async (req, res) => {
     sharedSnap.forEach((doc) => {
       const data = doc.data();
       if (data.codigo_usuario_fk === userId) {
+        return;
+      }
+      if (!matchesCyclePreferences(data)) {
         return;
       }
       sharedEvents.push({ id: doc.id, data });
@@ -303,6 +306,7 @@ router.get("/", async (req, res) => {
     });
 
     sharedEvents.forEach(({ id, data }) => {
+      if (!matchesCyclePreferences(data)) return;
       if (!eventMatchesFilters(data, filters)) return;
       eventsMap.set(
         id,

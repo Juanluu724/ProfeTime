@@ -13,6 +13,7 @@ async function firebaseAuth(req, res, next) {
     req.userEmail = decoded.email || null;
     req.userName = decoded.name || null;
     req.userPicture = decoded.picture || null;
+    req.userClaims = decoded || null;
     return next();
   } catch (err) {
     const isProduction =

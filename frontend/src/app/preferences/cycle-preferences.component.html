@@ -1,0 +1,52 @@
+<section class="prefs-card">
+  <header class="prefs-header">
+    <div class="prefs-title">
+      <h2>Ajustes</h2>
+      <p class="prefs-subtitle">Ciclos visibles en la app.</p>
+    </div>
+
+    <button type="button" class="btn-ghost" (click)="load()" [disabled]="loading || saving">
+      Recargar
+    </button>
+  </header>
+
+  <div class="prefs-state" *ngIf="loading">Cargando...</div>
+
+  <div *ngIf="!loading">
+    <div class="prefs-empty" *ngIf="!allowed.ciclo_formativo.length && !allowed.master_fp.length">
+      No hay ciclos asignados para tu usuario.
+    </div>
+
+    <div class="prefs-group" *ngIf="allowed.ciclo_formativo.length">
+      <h3>Ciclo Formativo</h3>
+      <label class="prefs-item" *ngFor="let grado of allowed.ciclo_formativo">
+        <input
+          type="checkbox"
+          [checked]="isChecked('ciclo_formativo', grado)"
+          (change)="toggle('ciclo_formativo', grado, $any($event.target).checked)"
+        />
+        <span>{{ grado }}</span>
+      </label>
+    </div>
+
+    <div class="prefs-group" *ngIf="allowed.master_fp.length">
+      <h3>Máster FP</h3>
+      <label class="prefs-item" *ngFor="let grado of allowed.master_fp">
+        <input
+          type="checkbox"
+          [checked]="isChecked('master_fp', grado)"
+          (change)="toggle('master_fp', grado, $any($event.target).checked)"
+        />
+        <span>{{ grado }}</span>
+      </label>
+    </div>
+
+    <div class="prefs-actions" *ngIf="allowed.ciclo_formativo.length || allowed.master_fp.length">
+      <button type="button" class="btn-primary" (click)="save()" [disabled]="saving">
+        {{ saving ? 'Guardando...' : 'Guardar' }}
+      </button>
+      <span class="prefs-hint">El calendario y la lista de eventos se actualizarán al guardar.</span>
+    </div>
+  </div>
+</section>
+

@@ -1,6 +1,7 @@
 const express = require("express");
 const { db } = require("../config/firebase");
 const firebaseAuth = require("../middleware/firebaseAuth");
+const { getCyclePreferencesForUser } = require("../services/cyclePreferences");
 
 const router = express.Router();
 
@@ -9,6 +10,27 @@ router.use(firebaseAuth);
 router.get("/", async (req, res) => {
   try {
     const userId = req.userId;
+
+    const { selectedDegrees } = await getCyclePreferencesForUser(userId, req.userClaims);
+    const selectedCf = new Set(selectedDegrees?.ciclo_formativo || []);
+    const selectedMf = new Set(selectedDegrees?.master_fp || []);
+
+    const isAcademicEventType = (tipo) => {
+      const t = String(tipo || "").trim().toLowerCase();
+      return t === "tarea" || t === "examen";
+    };
+
+    const matchesCyclePreferences = (data) => {
+      if (!isAcademicEventType(data?.tipo)) return true;
+
+      const tipoGrado = String(data?.tipo_grado || "").trim();
+      const grado = String(data?.grado || "").trim();
+      if (!tipoGrado || !grado) return true;
+
+      if (tipoGrado === "ciclo_formativo") return selectedCf.has(grado);
+      if (tipoGrado === "master_fp") return selectedMf.has(grado);
+      return true;
+    };
 
     const snapshot = await db
       .collection("events")
@@ -20,6 +42,7 @@ router.get("/", async (req, res) => {
 
     snapshot.forEach((doc) => {
       const data = doc.data();
+      if (!matchesCyclePreferences(data)) return;
       if (data.tipo === "examen") menuCounts.examenes += 1;
       if (data.tipo === "tarea") menuCounts.tareas += 1;
       if (data.tipo === "reunion") menuCounts.reuniones += 1;
