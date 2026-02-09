@@ -212,11 +212,32 @@
         </div>
 
         <div class="filter">
-          <label>Grado</label>
-          <select [(ngModel)]="calendarGrado" (ngModelChange)="onCalendarFiltersChange()" [disabled]="!calendarTipoGrado">
-            <option value="">{{ calendarTipoGrado ? 'Todos' : 'Selecciona tipo' }}</option>
-            <option *ngFor="let g of getCalendarGradoOptions()" [value]="g">{{ g }}</option>
-          </select>
+          <label>Grados</label>
+          <div class="multi-select" [class.disabled]="!calendarTipoGrado">
+            <button
+              type="button"
+              class="multi-select-trigger"
+              (click)="toggleGradoDropdown($event)"
+              [disabled]="!calendarTipoGrado"
+              [attr.aria-expanded]="gradoDropdownOpen"
+            >
+              <span class="multi-select-value">{{ getCalendarGradoFilterLabel() }}</span>
+              <span class="multi-select-caret">▾</span>
+            </button>
+
+            <div class="multi-select-panel" *ngIf="gradoDropdownOpen" (click)="stopEvent($event)">
+              <button type="button" class="ms-all" (click)="clearCalendarGrados($event)">Todos</button>
+
+              <label class="ms-item" *ngFor="let g of getCalendarGradoOptions()">
+                <input
+                  type="checkbox"
+                  [checked]="calendarGrados.includes(g)"
+                  (change)="toggleCalendarGrado(g, $any($event.target).checked, $event)"
+                />
+                <span>{{ g }}</span>
+              </label>
+            </div>
+          </div>
         </div>
 
         <div class="filter">

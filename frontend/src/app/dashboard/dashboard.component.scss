@@ -571,6 +571,109 @@
   color: #9ca3af;
 }
 
+.calendar-filters .multi-select {
+  position: relative;
+}
+
+.calendar-filters .multi-select-trigger {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  color: #111827;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.calendar-filters .multi-select-trigger:hover:enabled {
+  border-color: rgba(37, 99, 235, 0.35);
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.1);
+  transform: translateY(-1px);
+}
+
+.calendar-filters .multi-select-trigger:focus {
+  outline: none;
+  border-color: rgba(37, 99, 235, 0.45);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.calendar-filters .multi-select.disabled .multi-select-trigger {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.calendar-filters .multi-select-value {
+  text-align: left;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.calendar-filters .multi-select-caret {
+  color: #6b7280;
+  font-size: 12px;
+  flex: 0 0 auto;
+}
+
+.calendar-filters .multi-select-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  padding: 10px;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.calendar-filters .ms-all {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-weight: 800;
+  cursor: pointer;
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.calendar-filters .ms-all:hover {
+  border-color: rgba(37, 99, 235, 0.35);
+  background: rgba(37, 99, 235, 0.08);
+  color: #1d4ed8;
+}
+
+.calendar-filters .ms-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.calendar-filters .ms-item:hover {
+  background: #f8fafc;
+}
+
+.calendar-filters .ms-item input {
+  width: 16px;
+  height: 16px;
+}
+
 @media (max-width: 900px) {
   .calendar-filters {
     grid-template-columns: 1fr;

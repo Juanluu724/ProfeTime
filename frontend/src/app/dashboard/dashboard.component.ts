@@ -1,4 +1,5 @@
 ﻿import { Component, OnDestroy, OnInit } from '@angular/core';
+import { HostListener } from '@angular/core';
 import { DashboardService } from '../auth/services/dashboard.service';
 import { AuthService } from '../auth/services/auth.service';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -36,8 +37,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   events: CalendarEvent[] = [];
 
   calendarTipoGrado: NonNullable<CalendarEvent['tipoGrado']> | '' = '';
-  calendarGrado: string = '';
+  calendarGrados: string[] = [];
   calendarCurso: 1 | 2 | '' = '';
+  gradoDropdownOpen = false;
 
   cyclePrefSelected: CycleDegreeSelection = { ciclo_formativo: [], master_fp: [] };
   cyclePrefsLoaded = false;
@@ -190,6 +192,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    this.gradoDropdownOpen = false;
+  }
+
   toggleSidebar(): void {
     this.sidebarCollapsed = !this.sidebarCollapsed;
     localStorage.setItem(this.sidebarStorageKey, this.sidebarCollapsed ? '1' : '0');
@@ -234,15 +241,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   onCalendarTipoGradoChange(): void {
     if (!this.calendarTipoGrado) {
-      this.calendarGrado = '';
+      this.calendarGrados = [];
+      this.gradoDropdownOpen = false;
       this.generateCalendar();
       return;
     }
 
     const options = this.getCalendarGradoOptions();
-    if (options.length > 0 && this.calendarGrado && !options.includes(this.calendarGrado)) {
-      this.calendarGrado = '';
-    }
+    this.calendarGrados = (this.calendarGrados || []).filter((g) => options.includes(g));
     this.generateCalendar();
   }
 
@@ -257,18 +263,65 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private hasAnyCalendarFilter(): boolean {
-    return !!(this.calendarTipoGrado || this.calendarGrado || this.calendarCurso);
+    return !!(
+      this.calendarTipoGrado ||
+      (Array.isArray(this.calendarGrados) && this.calendarGrados.length > 0) ||
+      this.calendarCurso
+    );
   }
 
   private calendarEventMatchesFilters(event: CalendarEvent): boolean {
     if (this.calendarTipoGrado && event.tipoGrado !== this.calendarTipoGrado) return false;
-    if (this.calendarGrado && (event.grado || '') !== this.calendarGrado) return false;
+
+    if (Array.isArray(this.calendarGrados) && this.calendarGrados.length > 0) {
+      const evGrado = (event.grado || '').trim();
+      if (!this.calendarGrados.includes(evGrado)) return false;
+    }
 
     if (this.calendarCurso) {
       const eventCurso = event.curso !== undefined && event.curso !== null ? Number(event.curso) as 1 | 2 : null;
       if (eventCurso !== this.calendarCurso) return false;
     }
     return true;
+  }
+
+  getCalendarGradoFilterLabel(): string {
+    if (!this.calendarTipoGrado) return 'Selecciona tipo';
+    if (!Array.isArray(this.calendarGrados) || this.calendarGrados.length === 0) return 'Todos';
+    if (this.calendarGrados.length === 1) return this.calendarGrados[0] || 'Todos';
+    return `${this.calendarGrados.length} seleccionados`;
+  }
+
+  toggleGradoDropdown(event: Event): void {
+    event.stopPropagation();
+    if (!this.calendarTipoGrado) return;
+    this.gradoDropdownOpen = !this.gradoDropdownOpen;
+  }
+
+  stopEvent(event: Event): void {
+    event.stopPropagation();
+  }
+
+  clearCalendarGrados(event?: Event): void {
+    event?.stopPropagation();
+    this.calendarGrados = [];
+    this.gradoDropdownOpen = false;
+    this.generateCalendar();
+  }
+
+  toggleCalendarGrado(grado: string, checked: boolean, event?: Event): void {
+    event?.stopPropagation();
+    const normalized = String(grado || '').trim();
+    if (!normalized) return;
+
+    const next = new Set(this.calendarGrados || []);
+    if (checked) {
+      next.add(normalized);
+    } else {
+      next.delete(normalized);
+    }
+    this.calendarGrados = Array.from(next);
+    this.generateCalendar();
   }
 
   private getCalendarEventsForView(): CalendarEvent[] {
@@ -454,9 +507,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     if (this.calendarTipoGrado) {
       const options = this.getCalendarGradoOptions();
-      if (this.calendarGrado && !options.includes(this.calendarGrado)) {
-        this.calendarGrado = '';
-      }
+      this.calendarGrados = (this.calendarGrados || []).filter((g) => options.includes(g));
     }
 
     this.loadDashboard();
