@@ -20,6 +20,7 @@ export class CyclePreferencesComponent implements OnInit {
   @Output() saved = new EventEmitter<CyclePreferencesResponse>();
 
   loading = true;
+  loadError = false;
   saving = false;
 
   allowed: CycleDegreeSelection = { ciclo_formativo: [], master_fp: [] };
@@ -34,6 +35,7 @@ export class CyclePreferencesComponent implements OnInit {
 
   load(): void {
     this.loading = true;
+    this.loadError = false;
     this.prefs.getCyclePreferences().subscribe({
       next: (res) => {
         this.allowed = res?.allowed || { ciclo_formativo: [], master_fp: [] };
@@ -46,6 +48,7 @@ export class CyclePreferencesComponent implements OnInit {
       },
       error: () => {
         this.loading = false;
+        this.loadError = true;
         this.toast.error('No se pudieron cargar las preferencias.');
       }
     });
@@ -90,4 +93,3 @@ export class CyclePreferencesComponent implements OnInit {
     });
   }
 }
-

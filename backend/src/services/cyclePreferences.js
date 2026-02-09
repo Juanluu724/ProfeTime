@@ -147,12 +147,24 @@ async function getAllowedDegreesForUser(userId, userClaims) {
   ]);
 
   const roleInfo = normalizeRole(roleRaw);
-  const allowedDegrees = roleInfo.isAdmin
+  let allowedDegrees = roleInfo.isAdmin
     ? {
         ciclo_formativo: [...ACADEMIC_DEGREES.ciclo_formativo],
         master_fp: [...ACADEMIC_DEGREES.master_fp]
       }
     : extractAllowedDegreesFromUserData(userData);
+
+  const isEmptyAllowed =
+    !(allowedDegrees?.ciclo_formativo || []).length && !(allowedDegrees?.master_fp || []).length;
+
+  // Backward-compatible fallback: existing users don't have cycles assigned in Firestore yet.
+  // Allow seeing/selecting all cycles unless an explicit assignment exists.
+  if (!roleInfo.isAdmin && isEmptyAllowed) {
+    allowedDegrees = {
+      ciclo_formativo: [...ACADEMIC_DEGREES.ciclo_formativo],
+      master_fp: [...ACADEMIC_DEGREES.master_fp]
+    };
+  }
 
   return { role: roleInfo.role, isAdmin: roleInfo.isAdmin, allowedDegrees, userData };
 }
@@ -238,4 +250,3 @@ module.exports = {
   saveSelectedDegreesForUser,
   getCyclePreferencesForUser
 };
-

@@ -13,6 +13,10 @@
   <div class="prefs-state" *ngIf="loading">Cargando...</div>
 
   <div *ngIf="!loading">
+    <div class="prefs-empty" *ngIf="loadError">
+      No se pudieron cargar tus preferencias. Revisa la sesi&oacute;n e int&eacute;ntalo de nuevo.
+    </div>
+
     <div class="prefs-empty" *ngIf="!allowed.ciclo_formativo.length && !allowed.master_fp.length">
       No hay ciclos asignados para tu usuario.
     </div>
@@ -49,4 +53,3 @@
     </div>
   </div>
 </section>
-
