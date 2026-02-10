@@ -10,6 +10,9 @@
     <img src="https://img.shields.io/badge/Firestore-FFCA28?style=for-the-badge&logo=firebase&logoColor=black" alt="Firestore" />
     <img src="https://img.shields.io/badge/Socket.io-010101?style=for-the-badge&logo=socketdotio&logoColor=white" alt="Socket.io" />
   </p>
+  <p>
+    <a href="https://deepwiki.com/Juanluu724/ProfeTime"><img alt="Ask DeepWiki" src="https://deepwiki.com/badge.svg" /></a>
+  </p>
 </div>
 
 ---

@@ -1,0 +1,8 @@
+{
+  "repo_notes": [
+    {
+      "content": "ProfeTime es una aplicacion full-stack con Angular (carpeta frontend/) y Node.js + Express (carpeta backend/). La persistencia de datos es Firebase Firestore (NoSQL) usando firebase-admin en el backend. La autenticacion es Firebase Auth. Integracion con Google APIs (OAuth2) usando googleapis: Calendar (eventos y enlaces Meet) y Drive (picker / adjuntos). WebSockets con Socket.io. Despliegue previsto en Render.com (backend como servicio Node y frontend como build estatico o servido por el backend). Importante: en la implementacion actual NO se usa MySQL, NO hay consultas SQL, y NO se usa AWS RDS."
+    }
+  ]
+}
+
