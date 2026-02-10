@@ -412,7 +412,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   editarEvento(event: CalendarEvent) {
-    console.log('Editando evento:', event);
     this.selectedEventDetails = null;
     this.eventToEdit = event;
     this.showCreateEvent = true;

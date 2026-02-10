@@ -62,10 +62,12 @@ app.use(
     }
   })
 );
-app.use((req, res, next) => {
-    console.log(`Petición recibida: ${req.method} ${req.url}`);
+if (!isProduction) {
+  app.use((req, res, next) => {
+    console.log(`Peticion recibida: ${req.method} ${req.url}`);
     next();
-});
+  });
+}
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -87,16 +89,16 @@ app.get(/^(?!\/api).*/, (req, res) => {
 
 // Escuchar conexiones de clientes
 io.on("connection", (socket) => {
-    console.log("Usuario conectado al socket:", socket.id);
+    if (!isProduction) console.log("Usuario conectado al socket:", socket.id);
 
     // Un usuario se une a una "sala" con su propio ID de usuario para recibir mensajes privados
     socket.on("join_room", (userId) => {
         socket.join(userId);
-        console.log(`Usuario ${userId} unido a su sala privada`);
+        if (!isProduction) console.log(`Usuario ${userId} unido a su sala privada`);
     });
 
     socket.on("disconnect", () => {
-        console.log("Usuario desconectado", socket.id);
+        if (!isProduction) console.log("Usuario desconectado", socket.id);
     });
 });
 
@@ -105,4 +107,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`>>> Servidor corriendo con Sockets en http://localhost:${PORT}`);
 });
-/*cooment*/

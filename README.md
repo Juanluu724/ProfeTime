@@ -48,7 +48,7 @@ La aplicación sigue una arquitectura moderna **Cliente-Servidor** desacoplada (
 ### Backend (API REST & WebSocket)
 * **Runtime:** Node.js.
 * **Framework:** Express.js.
-* **Base de Datos:** Firebase Firestore (NoSQL). *Nota: El proyecto incluye dependencias de MySQL, pero la implementación actual utiliza Firestore*.
+* **Base de Datos:** Firebase Firestore (NoSQL).
 * **Autenticación:** Firebase Admin SDK.
 * **APIs Externas:** `googleapis` (Calendar, Drive, Meet).
 
