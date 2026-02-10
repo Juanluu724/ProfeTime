@@ -59,27 +59,44 @@ La aplicación sigue una arquitectura moderna **Cliente-Servidor** desacoplada (
 El sistema utiliza un enfoque híbrido de comunicación para garantizar la consistencia de datos y la inmediatez.
 
 ```mermaid
-graph TD
+flowchart TB
     User((Usuario))
     Client[Angular SPA]
-    Server[Node.js Express API]
-    DB[(Firestore DB)]
-    Socket[Socket.io Service]
-    Google[Google Cloud Platform]
-    Firebase[Firebase Auth]
 
-    User --> Client
-    Client -- REST API (HTTP) --> Server
-    Client -- WebSocket (Eventos) <--> Socket
-    Socket --- Server
-    
-    Server -- Read/Write --> DB
-    Server -- Verificación Token --> Firebase
-    Server -- OAuth2 / APIs --> Google
-    
-    subgraph Google Ecosystem
-      Firebase
-      Google
+    subgraph Render[Render.com]
+      Server[Node.js + Express API<br/>REST + Socket.io]
     end
 
+    subgraph Firebase[Firebase]
+      Auth[Firebase Auth]
+      DB[(Firestore)]
+    end
+
+    subgraph Google[Google APIs]
+      OAuth[OAuth2 Consent]
+      Calendar[Calendar API]
+      Drive[Drive API / Picker]
+      Meet[Meet (via Calendar)]
+    end
+
+    User --> Client
+    Client -->|HTTP/JSON + Bearer ID Token| Server
+    Client <--> |WebSocket| Server
+
+    Client -->|Login| Auth
+    Server -->|verifyIdToken| Auth
+    Server -->|Read/Write (users, events, google_tokens)| DB
+    Server -->|OAuth2| OAuth
+    Server --> Calendar
+    Server --> Drive
+    Server --> Meet
+
 ```
+
+## Despliegue (Render)
+
+El proyecto está pensado para desplegarse en **Render.com**:
+
+* **Backend:** servicio Node.js (Express + Socket.io).
+* **Frontend:** Angular compilado (`ng build`) como sitio estático o servido por el backend.
+* **Configuración:** en producción se usan variables de entorno de Render; en local se usa `backend/.env` con `dotenv`.
