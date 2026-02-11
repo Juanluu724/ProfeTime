@@ -102,6 +102,7 @@
           </span>
           <span class="item-text">Compartidos</span>
         </span>
+        <span class="badge" *ngIf="!sidebarCollapsed">{{ sharedCount }}</span>
       </button>
       <button class="item" type="button" [class.active]="activeSection === 'settings'"
         (click)="setSection('settings')" [attr.title]="sidebarCollapsed ? 'Ajustes' : null">

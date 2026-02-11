@@ -4,7 +4,7 @@ import { DashboardService } from '../auth/services/dashboard.service';
 import { AuthService } from '../auth/services/auth.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CalendarEvent } from '../models/event.model';
-import { Subscription, forkJoin } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { ToastService } from '../ui/toast.service';
 import { CycleDegreeSelection, CyclePreferencesResponse, PreferencesService } from '../preferences/preferences.service';
 
@@ -171,15 +171,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.events.push(normalized);
       }
 
+      this.recalculateMenuCounts();
       this.generateCalendar();
       this.notifications = this.buildNotifications(this.events);
     });
 
     this.deleteSubscription = this.dashboardService.onDeleteEvent$.subscribe((idEliminado) => {
       this.events = this.events.filter(e => e.codigo_evento !== idEliminado);
+      this.recalculateMenuCounts();
       this.generateCalendar();
       this.notifications = this.buildNotifications(this.events);
-      this.loadDashboard();
     });
   }
 
@@ -203,11 +204,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   loadDashboard(): void {
-    forkJoin({
-      dashboard: this.dashboardService.getDashboard(),
-      events: this.dashboardService.getEvents()
-    }).subscribe(({ dashboard, events }) => {
-      this.menuCounts = dashboard.menuCounts || { examenes: 0, tareas: 0, reuniones: 0, otros: 0 };
+    this.dashboardService.getEvents().subscribe((events) => {
       const rawEvents = events || [];
 
       this.events = rawEvents.map((event: any) => ({
@@ -232,6 +229,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         senderName: event.senderName || null
       })).filter((e) => this.shouldShowEventByCyclePref(e));
 
+      this.recalculateMenuCounts();
       this.notifications = this.buildNotifications(this.events);
       this.generateCalendar();
     }, (error) => {
@@ -534,6 +532,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (type === 'tarea') this.menuCounts.tareas += 1;
     if (type === 'reunion') this.menuCounts.reuniones += 1;
     if (type === 'otro') this.menuCounts.otros += 1;
+  }
+
+  private recalculateMenuCounts(): void {
+    this.menuCounts = { examenes: 0, tareas: 0, reuniones: 0, otros: 0 };
+    (this.events || []).forEach((event) => this.incrementMenuCount(event.type));
+  }
+
+  get sharedCount(): number {
+    return (this.events || []).filter((event) => event.ownership === 'compartido').length;
   }
 
   private buildNotifications(events: CalendarEvent[]): any[] {

@@ -108,6 +108,111 @@ function sanitizeTipoGrado(value) {
   return null;
 }
 
+function normalizeEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || ""));
+}
+
+function toArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function collectUniqueSharedEmails(sharedWithEmails, sharedWithEmail) {
+  const rawEmails = [...toArray(sharedWithEmails), sharedWithEmail].filter(Boolean);
+  return Array.from(
+    new Set(rawEmails.map(normalizeEmail).filter((email) => isValidEmail(email)))
+  );
+}
+
+async function processEventSharing({
+  code,
+  userId,
+  emails,
+  io,
+  socketPayload,
+  googlePayload,
+  existingParticipants = []
+}) {
+  const summary = {
+    requested: Array.isArray(emails) ? emails.length : 0,
+    shared: [],
+    skippedOwner: [],
+    alreadyParticipant: [],
+    notFound: []
+  };
+
+  if (!Array.isArray(emails) || emails.length === 0) {
+    return summary;
+  }
+
+  const ownerDoc = await db.collection("users").doc(userId).get();
+  const ownerData = ownerDoc.exists ? ownerDoc.data() : null;
+  const ownerName = ownerData ? `${ownerData.nom || ""} ${ownerData.apes || ""}`.trim() : null;
+  const ownerEmail = ownerData?.correo ? normalizeEmail(ownerData.correo) : null;
+
+  const participantIds = new Set(
+    toArray(existingParticipants).map((id) => String(id || "").trim()).filter(Boolean)
+  );
+
+  for (const email of emails) {
+    if (ownerEmail && email === ownerEmail) {
+      summary.skippedOwner.push(email);
+      continue;
+    }
+
+    const guestQuery = await db
+      .collection("users")
+      .where("correo", "==", email)
+      .limit(1)
+      .get();
+
+    if (guestQuery.empty) {
+      summary.notFound.push(email);
+      continue;
+    }
+
+    const guestDoc = guestQuery.docs[0];
+    const guestId = guestDoc.id;
+    if (participantIds.has(guestId)) {
+      summary.alreadyParticipant.push(email);
+      continue;
+    }
+
+    await db
+      .collection("events")
+      .doc(code)
+      .update({
+        participantes: admin.firestore.FieldValue.arrayUnion(guestId)
+      });
+
+    participantIds.add(guestId);
+    summary.shared.push(email);
+
+    if (io) {
+      io.to(guestId).emit("nuevo_evento_compartido", {
+        codigo_evento: code,
+        ...socketPayload,
+        ownership: "compartido",
+        senderName: ownerName
+      });
+    }
+
+    try {
+      await createGoogleCalendarEvent(guestId, googlePayload);
+    } catch (err) {
+      console.error(
+        "Error creando evento en Google Calendar para invitado:",
+        err?.response?.data || err
+      );
+    }
+  }
+
+  return summary;
+}
+
 function createOAuthClient() {
   return new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
@@ -380,18 +485,19 @@ router.post("/", async (req, res) => {
     await db.collection("events").doc(code).set(eventDoc);
 
     let googleSync = { ok: true };
+    const googlePayload = {
+      date,
+      startTime,
+      endTime,
+      title,
+      description,
+      location,
+      meet,
+      drive,
+      maps
+    };
     try {
-      await createGoogleCalendarEvent(userId, {
-        date,
-        startTime,
-        endTime,
-        title,
-        description,
-        location,
-        meet,
-        drive,
-        maps
-      });
+      await createGoogleCalendarEvent(userId, googlePayload);
     } catch (err) {
       googleSync = {
         ok: false,
@@ -400,88 +506,32 @@ router.post("/", async (req, res) => {
       console.error("Error creando evento en Google Calendar:", err?.response?.data || err);
     }
 
-    const toArray = (value) => (Array.isArray(value) ? value : []);
-    const rawEmails = [...toArray(sharedWithEmails), sharedWithEmail].filter(Boolean);
-    const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
-    const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-
-    const uniqueEmails = Array.from(
-      new Set(rawEmails.map(normalizeEmail).filter((email) => isValidEmail(email)))
-    );
-
-    if (uniqueEmails.length > 0) {
-      const ownerDoc = await db.collection("users").doc(userId).get();
-      const ownerData = ownerDoc.exists ? ownerDoc.data() : null;
-      const ownerName = ownerData ? `${ownerData.nom} ${ownerData.apes}`.trim() : null;
-      const ownerEmail = ownerData?.correo ? normalizeEmail(ownerData.correo) : null;
-
-      for (const email of uniqueEmails) {
-        if (ownerEmail && email === ownerEmail) {
-          continue;
-        }
-
-        const guestQuery = await db
-          .collection("users")
-          .where("correo", "==", email)
-          .limit(1)
-          .get();
-
-        if (guestQuery.empty) {
-          continue;
-        }
-
-        const guestDoc = guestQuery.docs[0];
-        const guestId = guestDoc.id;
-
-        await db
-          .collection("events")
-          .doc(code)
-          .update({
-            participantes: admin.firestore.FieldValue.arrayUnion(guestId)
-          });
-
-        io.to(guestId).emit("nuevo_evento_compartido", {
-          codigo_evento: code,
-          title,
-          date,
-          type,
-          description,
-          tipoGrado: academic.isAcademic ? academic.tipoGrado : null,
-          grado: academic.isAcademic ? academic.grado : null,
-          curso: academic.isAcademic ? academic.curso : null,
-          startTime,
-          endTime,
-          location,
-          meet,
-          drive,
-          driveFileId,
-          driveFileName,
-          driveMimeType,
-          maps,
-          ownership: "compartido",
-          senderName: ownerName
-        });
-
-        try {
-          await createGoogleCalendarEvent(guestId, {
-            date,
-            startTime,
-            endTime,
-            title,
-            description,
-            location,
-            meet,
-            drive,
-            maps
-          });
-        } catch (err) {
-          console.error(
-            "Error creando evento en Google Calendar para invitado:",
-            err?.response?.data || err
-          );
-        }
-      }
-    }
+    const uniqueEmails = collectUniqueSharedEmails(sharedWithEmails, sharedWithEmail);
+    const sharing = await processEventSharing({
+      code,
+      userId,
+      emails: uniqueEmails,
+      io,
+      socketPayload: {
+        title,
+        date,
+        type,
+        description,
+        tipoGrado: academic.isAcademic ? academic.tipoGrado : null,
+        grado: academic.isAcademic ? academic.grado : null,
+        curso: academic.isAcademic ? academic.curso : null,
+        startTime,
+        endTime,
+        location,
+        meet,
+        drive,
+        driveFileId,
+        driveFileName,
+        driveMimeType,
+        maps
+      },
+      googlePayload
+    });
 
     res.status(201).json({
       codigo_evento: code,
@@ -489,7 +539,8 @@ router.post("/", async (req, res) => {
       tipoGrado: academic.isAcademic ? academic.tipoGrado : null,
       grado: academic.isAcademic ? academic.grado : null,
       curso: academic.isAcademic ? academic.curso : null,
-      googleSync
+      googleSync,
+      sharing
     });
   } catch (err) {
     console.error(err);
@@ -500,6 +551,8 @@ router.post("/", async (req, res) => {
 router.put("/:codigo_evento", async (req, res) => {
   try {
     const { codigo_evento } = req.params;
+    const userId = req.userId;
+    const io = req.app.get("io");
     const {
       date,
       type,
@@ -516,7 +569,9 @@ router.put("/:codigo_evento", async (req, res) => {
       driveFileId,
       driveFileName,
       driveMimeType,
-      maps
+      maps,
+      sharedWithEmail,
+      sharedWithEmails
     } =
       req.body;
 
@@ -530,6 +585,8 @@ router.put("/:codigo_evento", async (req, res) => {
     if (!academic.ok) {
       return res.status(400).json({ msg: academic.msg });
     }
+
+    const eventData = snapshot.data() || {};
 
     await eventRef.update({
       fec_inicio: date,
@@ -550,7 +607,45 @@ router.put("/:codigo_evento", async (req, res) => {
       maps_link: maps
     });
 
-    res.json({ msg: "Evento actualizado correctamente" });
+    const uniqueEmails = collectUniqueSharedEmails(sharedWithEmails, sharedWithEmail);
+    const sharing = await processEventSharing({
+      code: codigo_evento,
+      userId,
+      emails: uniqueEmails,
+      io,
+      socketPayload: {
+        title,
+        date,
+        type,
+        description,
+        tipoGrado: academic.isAcademic ? academic.tipoGrado : null,
+        grado: academic.isAcademic ? academic.grado : null,
+        curso: academic.isAcademic ? academic.curso : null,
+        startTime,
+        endTime,
+        location,
+        meet,
+        drive,
+        driveFileId,
+        driveFileName,
+        driveMimeType,
+        maps
+      },
+      googlePayload: {
+        date,
+        startTime,
+        endTime,
+        title,
+        description,
+        location,
+        meet,
+        drive,
+        maps
+      },
+      existingParticipants: toArray(eventData.participantes)
+    });
+
+    res.json({ msg: "Evento actualizado correctamente", sharing });
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Error en el servidor al actualizar" });
